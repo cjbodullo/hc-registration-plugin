@@ -247,7 +247,7 @@
   padding: 18px 18px 14px;
 }
 
-/* Match winner photo release main title: .wpr-container .header h1 */
+/* Match photo release main title: .wpr-container .header h1 */
 .hcr-title {
   color: #116b6b;
   font-size: clamp(28px, 4.2vw, 36px);
@@ -280,7 +280,7 @@
   color: #5c6570;
 }
 
-/* Match winner photo release section headings: .wpr-form .form-section h3 */
+/* Match photo release section headings: .wpr-form .form-section h3 */
 .hcr-form .hcr-section-title {
   color: #36535f;
   font-weight: 600;
@@ -400,7 +400,7 @@
   box-shadow: 0 0 0 0.2rem rgba(102, 204, 204, 0.3);
 }
 
-/* Thank-you page — same visual language as winner release (.wpr-thank-you) */
+/* Thank-you page — same visual language as photo release (.wpr-thank-you) */
 .hcr-thankyou-page {
   max-width: 760px;
   margin-left: auto;

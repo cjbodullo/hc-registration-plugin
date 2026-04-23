@@ -1,6 +1,6 @@
 # Pambers Swaddlers HC Registration
 
-WordPress plugin that renders a healthcare-centre registration form via shortcode. Styling aligns with the **winner photo release** form (colours, section headings) and the distributor step-one field layout, without loading Bootstrap or jQuery from CDNs.
+WordPress plugin that renders a healthcare-centre registration form via shortcode. Styling aligns with the **photo release** form (colours, section headings) and the distributor step-one field layout, without loading Bootstrap or jQuery from CDNs.
 
 **Text domain:** `pambers-hc-registration`  
 **Version:** 1.0.0 (`HCR_VERSION` in the main plugin file).
@@ -17,12 +17,9 @@ WordPress plugin that renders a healthcare-centre registration form via shortcod
 
 ## Shortcodes
 
-Either shortcode outputs the same form:
-
 | Shortcode | Use |
 |-----------|-----|
-| `[pambers_hc_registration]` | Primary tag |
-| `[hc_winners_photo_release_form]` | Alias |
+| `[pambers_hc_registration]` | Renders the registration form |
 
 ### Attributes
 
@@ -74,8 +71,8 @@ Styles: `assets/css/hc-registration.css` (self-contained layout and form primiti
 
 ## Submission flow
 
-- Form posts to `admin-post.php` with `action=hcr_winners_register`.
-- Hooks: `admin_post_hcr_winners_register` and `admin_post_nopriv_hcr_winners_register`.
+- Form posts to `admin-post.php` with `action=hcr_healthcare_register` (constant `HCR_POST_ACTION` in the main plugin file).
+- Hooks: `admin_post_hcr_healthcare_register` and `admin_post_nopriv_hcr_healthcare_register`. Deprecated `admin_post_*` hooks for `hcr_submit_registration` remain registered so briefly cached form HTML from an earlier plugin version can still post until the page is refreshed.
 - Success and error states return to the form URL with `hcr_status` / `hcr_message` query args; the shortcode clears them from the address bar with a small inline script where applicable.
 
 ## WordPress admin (review submissions)

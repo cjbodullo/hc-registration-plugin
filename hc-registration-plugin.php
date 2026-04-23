@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Pambers Swaddlers HC Registration
- * Description: Shortcode form for winners photo release / HC registration, matching distributor registration step 1 layout and styling.
+ * Description: Shortcode form for Pambers Swaddlers HC registration.
  * Version: 1.0.0
  * Author: BabyBrands
  * Text Domain: pambers-hc-registration
@@ -15,6 +15,8 @@ define('HCR_VERSION', '1.0.0');
 define('HCR_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HCR_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('HCR_ADMIN_PAGE_SLUG', 'hcr-submissions');
+/** Posted `action` / nonce scheme for public form (`admin-post.php`). */
+define('HCR_POST_ACTION', 'hcr_healthcare_register');
 
 require_once HCR_PLUGIN_PATH . 'includes/class-hcr-submissions-list-table.php';
 
@@ -248,7 +250,7 @@ function hcr_build_feedback_url($status, $message = '', $redirectUrl = '')
 }
 
 /**
- * Shortcode: [pambers_hc_registration] or [hc_winners_photo_release_form]
+ * Shortcode: [pambers_hc_registration]
  *
  * Attributes:
  * - thank_you_url — optional custom URL after success
@@ -367,11 +369,11 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                     </div>
 
                     <form class="hcr-form px-3 pb-3" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" novalidate>
-                        <input type="hidden" name="action" value="hcr_winners_register">
+                        <input type="hidden" name="action" value="<?php echo esc_attr(HCR_POST_ACTION); ?>">
                         <input type="hidden" name="redirect_to" value="<?php echo esc_url($redirectUrl); ?>">
                         <input type="hidden" name="hcr_success_redirect" value="<?php echo esc_url($successRedirectUrl); ?>">
                         <input type="hidden" name="hcr_notification_email" value="<?php echo esc_attr($notifyEmail); ?>">
-                        <?php wp_nonce_field('hcr_winners_register', 'hcr_nonce'); ?>
+                        <?php wp_nonce_field(HCR_POST_ACTION, 'hcr_nonce'); ?>
 
                         <h3 class="h6 font-weight-bold mb-3 hcr-section-title"><?php esc_html_e('General Information', 'pambers-hc-registration'); ?></h3>
 
@@ -783,9 +785,15 @@ function hcr_handle_submission()
     $successRedirect = wp_validate_redirect($successRedirect, $redirectUrl);
     $successRedirect = remove_query_arg(['hcr_status', 'hcr_message'], $successRedirect);
 
+    $posted_action = isset($_POST['action']) ? sanitize_text_field(wp_unslash($_POST['action'])) : '';
+    $nonce_by_action = [
+        HCR_POST_ACTION => HCR_POST_ACTION,
+        'hcr_submit_registration' => 'hcr_submit_registration',
+    ];
+    $nonce_action = isset($nonce_by_action[$posted_action]) ? $nonce_by_action[$posted_action] : HCR_POST_ACTION;
     if (
         !isset($_POST['hcr_nonce']) ||
-        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['hcr_nonce'])), 'hcr_winners_register')
+        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['hcr_nonce'])), $nonce_action)
     ) {
         wp_safe_redirect(hcr_build_feedback_url('error', __('Security check failed. Please try again.', 'pambers-hc-registration'), $redirectUrl));
         exit;
@@ -860,8 +868,11 @@ function hcr_handle_submission()
     exit;
 }
 
-add_action('admin_post_nopriv_hcr_winners_register', 'hcr_handle_submission');
-add_action('admin_post_hcr_winners_register', 'hcr_handle_submission');
+add_action('admin_post_nopriv_' . HCR_POST_ACTION, 'hcr_handle_submission');
+add_action('admin_post_' . HCR_POST_ACTION, 'hcr_handle_submission');
+/** @deprecated Prior action name; kept for cached HTML. */
+add_action('admin_post_nopriv_hcr_submit_registration', 'hcr_handle_submission');
+add_action('admin_post_hcr_submit_registration', 'hcr_handle_submission');
 
 function hcr_register_admin_menu()
 {
