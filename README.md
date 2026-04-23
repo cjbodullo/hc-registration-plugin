@@ -55,7 +55,7 @@ On `init`, the plugin creates or updates:
 
 **Table:** `{wpdb_prefix}hc_registration_submissions`
 
-Columns include: organization and contact fields, address fields, `category`, `patients_type`, `weekly_expecting_parents`, `number_of_packages`, `confirmed_distribution`, `created_at`. The table is created or brought in line with `dbDelta()` on `init`.
+Columns include: organization and contact fields, address fields, `category`, `patients_type`, `weekly_expecting_parents`, `number_of_packages`, `confirmed_distribution`, `created_at`. All **VARCHAR** columns are nullable (`NULL DEFAULT NULL`). `confirmed_distribution` remains `TINYINT NOT NULL DEFAULT 0` and `created_at` is `NOT NULL`. The table is created or brought in line with `dbDelta()` on `init`.
 
 ## Assets
 
@@ -77,6 +77,14 @@ Styles: `assets/css/hc-registration.css` (self-contained layout and form primiti
 - Form posts to `admin-post.php` with `action=hcr_winners_register`.
 - Hooks: `admin_post_hcr_winners_register` and `admin_post_nopriv_hcr_winners_register`.
 - Success and error states return to the form URL with `hcr_status` / `hcr_message` query args; the shortcode clears them from the address bar with a small inline script where applicable.
+
+## WordPress admin (review submissions)
+
+- In the dashboard sidebar: **HC registrations** (clipboard icon). Requires the **`manage_options`** capability (typically Administrators).
+- Paginated list (20 per page) with sortable columns.
+- **Actions** column (last): **View** (read-only detail), **Edit** (full form, same validation as the public form), **Delete** (nonce-protected `admin-post.php` action; browser confirm before delete).
+- Detail screen also has **Edit** and **Delete** at the bottom. After a successful save you are returned to the detail view with a success notice.
+- Admin screen slug: `hcr-submissions` (`admin.php?page=hcr-submissions`).
 
 ## Support
 

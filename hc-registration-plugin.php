@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
 define('HCR_VERSION', '1.0.0');
 define('HCR_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HCR_PLUGIN_PATH', plugin_dir_path(__FILE__));
+define('HCR_ADMIN_PAGE_SLUG', 'hcr-submissions');
+
+require_once HCR_PLUGIN_PATH . 'includes/class-hcr-submissions-list-table.php';
 
 /**
  * @return string
@@ -36,23 +39,23 @@ function hcr_maybe_install_table()
 
     $sql = "CREATE TABLE {$table} (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        organization_name VARCHAR(255) NOT NULL,
-        contact_first_name VARCHAR(120) NOT NULL,
-        contact_last_name VARCHAR(120) NOT NULL,
-        email VARCHAR(190) NOT NULL,
-        job_title VARCHAR(190) NOT NULL,
-        department VARCHAR(190) NOT NULL,
-        phone VARCHAR(40) NOT NULL,
-        extension VARCHAR(20) NULL,
-        address_1 VARCHAR(255) NOT NULL,
-        suite VARCHAR(120) NULL,
-        city VARCHAR(120) NOT NULL,
-        province VARCHAR(10) NOT NULL,
-        postal_code VARCHAR(25) NOT NULL,
-        category VARCHAR(120) NOT NULL,
-        patients_type VARCHAR(40) NOT NULL,
-        weekly_expecting_parents VARCHAR(120) NOT NULL DEFAULT '',
-        number_of_packages VARCHAR(10) NOT NULL DEFAULT '',
+        organization_name VARCHAR(255) NULL DEFAULT NULL,
+        contact_first_name VARCHAR(120) NULL DEFAULT NULL,
+        contact_last_name VARCHAR(120) NULL DEFAULT NULL,
+        email VARCHAR(190) NULL DEFAULT NULL,
+        job_title VARCHAR(190) NULL DEFAULT NULL,
+        department VARCHAR(190) NULL DEFAULT NULL,
+        phone VARCHAR(40) NULL DEFAULT NULL,
+        extension VARCHAR(20) NULL DEFAULT NULL,
+        address_1 VARCHAR(255) NULL DEFAULT NULL,
+        suite VARCHAR(120) NULL DEFAULT NULL,
+        city VARCHAR(120) NULL DEFAULT NULL,
+        province VARCHAR(10) NULL DEFAULT NULL,
+        postal_code VARCHAR(25) NULL DEFAULT NULL,
+        category VARCHAR(120) NULL DEFAULT NULL,
+        patients_type VARCHAR(40) NULL DEFAULT NULL,
+        weekly_expecting_parents VARCHAR(120) NULL DEFAULT NULL,
+        number_of_packages VARCHAR(10) NULL DEFAULT NULL,
         confirmed_distribution TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id),
@@ -83,6 +86,123 @@ function hcr_get_canadian_provinces()
         'QC' => 'Quebec',
         'SK' => 'Saskatchewan',
         'YT' => 'Yukon',
+    ];
+}
+
+/**
+ * @return string[]
+ */
+function hcr_get_registration_categories()
+{
+    return [
+        'Doula / Midwife',
+        'Ultrasound',
+        'Prenatal Instructor',
+        'Hospital',
+        'Dr. / OBGYN',
+        'Trade Show',
+        'Pregnancy Centre',
+        'Medical Centre',
+        'Other',
+    ];
+}
+
+/**
+ * @return string[]
+ */
+function hcr_get_patients_types()
+{
+    return ['Prenatal', 'Postnatal', 'Both'];
+}
+
+/**
+ * Validate submission fields (DB column keys). Used by public form and admin save.
+ *
+ * @param array<string,mixed> $input Raw values (e.g. from POST after wp_unslash).
+ * @param bool $require_confirm Whether confirmed_distribution must be 1.
+ * @return array<string,mixed>|WP_Error Row for insert/update (nulls for empty optional strings).
+ */
+function hcr_validate_submission_row(array $input, $require_confirm = true)
+{
+    $organization = sanitize_text_field($input['organization_name'] ?? '');
+    $first = sanitize_text_field($input['contact_first_name'] ?? '');
+    $last = sanitize_text_field($input['contact_last_name'] ?? '');
+    $email = sanitize_email($input['email'] ?? '');
+    $job = sanitize_text_field($input['job_title'] ?? '');
+    $department = sanitize_text_field($input['department'] ?? '');
+    $phone = sanitize_text_field($input['phone'] ?? '');
+    $extension = sanitize_text_field($input['extension'] ?? '');
+    $address1 = sanitize_text_field($input['address_1'] ?? '');
+    $suite = sanitize_text_field($input['suite'] ?? '');
+    $city = sanitize_text_field($input['city'] ?? '');
+    $province = sanitize_text_field($input['province'] ?? '');
+    $postalRaw = strtoupper(preg_replace('/\s+/', ' ', trim((string) ($input['postal_code'] ?? ''))));
+    $postal = $postalRaw;
+    $category = sanitize_text_field($input['category'] ?? '');
+    $patientsType = sanitize_text_field($input['patients_type'] ?? '');
+    $weeklyExpecting = preg_replace('/\D/', '', (string) ($input['weekly_expecting_parents'] ?? ''));
+    $numberOfPackages = sanitize_text_field($input['number_of_packages'] ?? '');
+    $confirmRaw = $input['confirmed_distribution'] ?? '';
+    $confirmDistribution = $confirmRaw === 1 || $confirmRaw === '1' || $confirmRaw === true;
+
+    $allowedProvinces = array_keys(hcr_get_canadian_provinces());
+    if ($province !== '' && !in_array($province, $allowedProvinces, true)) {
+        $province = '';
+    }
+
+    if ($category !== '' && !in_array($category, hcr_get_registration_categories(), true)) {
+        $category = '';
+    }
+
+    if ($patientsType !== '' && !in_array($patientsType, hcr_get_patients_types(), true)) {
+        $patientsType = '';
+    }
+
+    if (
+        $organization === '' || $first === '' || $last === '' || !is_email($email) ||
+        $job === '' || $department === '' || $phone === '' || $address1 === '' ||
+        $city === '' || $province === '' || $postal === '' || $category === '' || $patientsType === '' ||
+        $weeklyExpecting === '' || !in_array($numberOfPackages, ['12', '24'], true)
+    ) {
+        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
+    }
+
+    if ($require_confirm && !$confirmDistribution) {
+        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
+    }
+
+    if ($extension !== '' && !ctype_digit($extension)) {
+        return new WP_Error('hcr_extension', __('Extension must contain digits only.', 'pambers-hc-registration'));
+    }
+
+    if (!preg_match('/^[A-Z]\d[A-Z] \d[A-Z]\d$/', $postal)) {
+        return new WP_Error('hcr_postal', __('Please enter a valid postal code (format A1A 1A1).', 'pambers-hc-registration'));
+    }
+
+    $digits = preg_replace('/\D/', '', $phone);
+    if (strlen($digits) !== 10) {
+        return new WP_Error('hcr_phone', __('Please enter a valid 10-digit phone number.', 'pambers-hc-registration'));
+    }
+
+    return [
+        'organization_name' => $organization,
+        'contact_first_name' => $first,
+        'contact_last_name' => $last,
+        'email' => $email,
+        'job_title' => $job,
+        'department' => $department,
+        'phone' => $phone,
+        'extension' => $extension === '' ? null : $extension,
+        'address_1' => $address1,
+        'suite' => $suite === '' ? null : $suite,
+        'city' => $city,
+        'province' => $province,
+        'postal_code' => $postal,
+        'category' => $category,
+        'patients_type' => $patientsType,
+        'weekly_expecting_parents' => $weeklyExpecting,
+        'number_of_packages' => $numberOfPackages,
+        'confirmed_distribution' => $confirmDistribution ? 1 : 0,
     ];
 }
 
@@ -355,19 +475,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 
                         <div class="form-group mt-3">
                             <label class="font-weight-bold d-block">*<?php esc_html_e('Category', 'pambers-hc-registration'); ?></label>
-                            <?php
-                            $categories = [
-                                'Doula / Midwife',
-                                'Ultrasound',
-                                'Prenatal Instructor',
-                                'Hospital',
-                                'Dr. / OBGYN',
-                                'Trade Show',
-                                'Pregnancy Centre',
-                                'Medical Centre',
-                                'Other',
-                            ];
-                            foreach ($categories as $cat) :
+                            <?php foreach (hcr_get_registration_categories() as $cat) :
                                 $id = 'hcr-category-' . sanitize_title($cat);
                                 ?>
                                 <div class="form-check form-check-inline">
@@ -379,7 +487,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 
                         <div class="form-group">
                             <label class="font-weight-bold d-block">*<?php esc_html_e('Identify the majority of patients you cater to', 'pambers-hc-registration'); ?></label>
-                            <?php foreach (['Prenatal', 'Postnatal', 'Both'] as $pt) : ?>
+                            <?php foreach (hcr_get_patients_types() as $pt) : ?>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="patientsType" id="hcr-patientsType-<?php echo esc_attr(strtolower($pt)); ?>" value="<?php echo esc_attr($pt); ?>" required>
                                     <label class="form-check-label" for="hcr-patientsType-<?php echo esc_attr(strtolower($pt)); ?>"><?php echo esc_html($pt); ?></label>
@@ -658,7 +766,6 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 }
 
 add_shortcode('pambers_hc_registration', 'hcr_render_form_shortcode');
-add_shortcode('hc_winners_photo_release_form', 'hcr_render_form_shortcode');
 
 function hcr_handle_submission()
 {
@@ -683,104 +790,39 @@ function hcr_handle_submission()
         wp_safe_redirect(hcr_build_feedback_url('error', __('Security check failed. Please try again.', 'pambers-hc-registration'), $redirectUrl));
         exit;
     }
-    wp_safe_redirect(hcr_build_feedback_url('success', '', $successRedirect));
-    exit;
     global $wpdb;
 
-    $organization = sanitize_text_field(wp_unslash($_POST['name'] ?? ''));
-    $first = sanitize_text_field(wp_unslash($_POST['firstName'] ?? ''));
-    $last = sanitize_text_field(wp_unslash($_POST['lastName'] ?? ''));
-    $email = sanitize_email(wp_unslash($_POST['email'] ?? ''));
-    $job = sanitize_text_field(wp_unslash($_POST['job'] ?? ''));
-    $department = sanitize_text_field(wp_unslash($_POST['department'] ?? ''));
-    $phone = sanitize_text_field(wp_unslash($_POST['phone'] ?? ''));
-    $extension = sanitize_text_field(wp_unslash($_POST['extension'] ?? ''));
-    $address1 = sanitize_text_field(wp_unslash($_POST['address1'] ?? ''));
-    $suite = sanitize_text_field(wp_unslash($_POST['suite'] ?? ''));
-    $city = sanitize_text_field(wp_unslash($_POST['city'] ?? ''));
-    $province = sanitize_text_field(wp_unslash($_POST['province'] ?? ''));
-    $postalRaw = strtoupper(preg_replace('/\s+/', ' ', trim((string) wp_unslash($_POST['postalCode'] ?? ''))));
-    $postal = $postalRaw;
-    $category = sanitize_text_field(wp_unslash($_POST['category'] ?? ''));
-    $patientsType = sanitize_text_field(wp_unslash($_POST['patientsType'] ?? ''));
-    $weeklyExpecting = preg_replace('/\D/', '', (string) wp_unslash($_POST['weeklyExpecting'] ?? ''));
-    $numberOfPackages = sanitize_text_field(wp_unslash($_POST['numberOfPackages'] ?? ''));
-    $confirmDistribution = !empty($_POST['confirmDistribution']) && (string) wp_unslash($_POST['confirmDistribution']) === '1';
-
-    $allowedProvinces = array_keys(hcr_get_canadian_provinces());
-    if ($province !== '' && !in_array($province, $allowedProvinces, true)) {
-        $province = '';
-    }
-
-    $allowedCategories = [
-        'Doula / Midwife',
-        'Ultrasound',
-        'Prenatal Instructor',
-        'Hospital',
-        'Dr. / OBGYN',
-        'Trade Show',
-        'Pregnancy Centre',
-        'Medical Centre',
-        'Other',
+    $input = [
+        'organization_name' => wp_unslash($_POST['name'] ?? ''),
+        'contact_first_name' => wp_unslash($_POST['firstName'] ?? ''),
+        'contact_last_name' => wp_unslash($_POST['lastName'] ?? ''),
+        'email' => wp_unslash($_POST['email'] ?? ''),
+        'job_title' => wp_unslash($_POST['job'] ?? ''),
+        'department' => wp_unslash($_POST['department'] ?? ''),
+        'phone' => wp_unslash($_POST['phone'] ?? ''),
+        'extension' => wp_unslash($_POST['extension'] ?? ''),
+        'address_1' => wp_unslash($_POST['address1'] ?? ''),
+        'suite' => wp_unslash($_POST['suite'] ?? ''),
+        'city' => wp_unslash($_POST['city'] ?? ''),
+        'province' => wp_unslash($_POST['province'] ?? ''),
+        'postal_code' => wp_unslash($_POST['postalCode'] ?? ''),
+        'category' => wp_unslash($_POST['category'] ?? ''),
+        'patients_type' => wp_unslash($_POST['patientsType'] ?? ''),
+        'weekly_expecting_parents' => wp_unslash($_POST['weeklyExpecting'] ?? ''),
+        'number_of_packages' => wp_unslash($_POST['numberOfPackages'] ?? ''),
+        'confirmed_distribution' => !empty($_POST['confirmDistribution']) ? wp_unslash($_POST['confirmDistribution']) : '',
     ];
-    if ($category !== '' && !in_array($category, $allowedCategories, true)) {
-        $category = '';
-    }
 
-    $allowedPatients = ['Prenatal', 'Postnatal', 'Both'];
-    if ($patientsType !== '' && !in_array($patientsType, $allowedPatients, true)) {
-        $patientsType = '';
-    }
-
-    if (
-        $organization === '' || $first === '' || $last === '' || !is_email($email) ||
-        $job === '' || $department === '' || $phone === '' || $address1 === '' ||
-        $city === '' || $province === '' || $postal === '' || $category === '' || $patientsType === '' ||
-        $weeklyExpecting === '' || !in_array($numberOfPackages, ['12', '24'], true) || !$confirmDistribution
-    ) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Please complete all required fields.', 'pambers-hc-registration'), $redirectUrl));
-        exit;
-    }
-
-    if ($extension !== '' && !ctype_digit($extension)) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Extension must contain digits only.', 'pambers-hc-registration'), $redirectUrl));
-        exit;
-    }
-
-    if (!preg_match('/^[A-Z]\d[A-Z] \d[A-Z]\d$/', $postal)) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Please enter a valid postal code (format A1A 1A1).', 'pambers-hc-registration'), $redirectUrl));
-        exit;
-    }
-
-    $digits = preg_replace('/\D/', '', $phone);
-    if (strlen($digits) !== 10) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Please enter a valid 10-digit phone number.', 'pambers-hc-registration'), $redirectUrl));
+    $validated = hcr_validate_submission_row($input, true);
+    if (is_wp_error($validated)) {
+        wp_safe_redirect(hcr_build_feedback_url('error', $validated->get_error_message(), $redirectUrl));
         exit;
     }
 
     $table = hcr_get_submissions_table_name();
     $inserted = $wpdb->insert(
         $table,
-        [
-            'organization_name' => $organization,
-            'contact_first_name' => $first,
-            'contact_last_name' => $last,
-            'email' => $email,
-            'job_title' => $job,
-            'department' => $department,
-            'phone' => $phone,
-            'extension' => $extension === '' ? null : $extension,
-            'address_1' => $address1,
-            'suite' => $suite === '' ? null : $suite,
-            'city' => $city,
-            'province' => $province,
-            'postal_code' => $postal,
-            'category' => $category,
-            'patients_type' => $patientsType,
-            'weekly_expecting_parents' => $weeklyExpecting,
-            'number_of_packages' => $numberOfPackages,
-            'confirmed_distribution' => 1,
-        ],
+        $validated,
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
             '%s', '%s', '%d',
@@ -797,19 +839,19 @@ function hcr_handle_submission()
         $subject = sprintf('[%s] New HC registration', wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES));
         $body = sprintf(
             "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\n",
-            $organization,
-            $first,
-            $last,
-            $email,
-            $phone,
-            $address1,
-            $city,
-            $province,
-            $postal,
-            $category,
-            $patientsType,
-            $weeklyExpecting,
-            $numberOfPackages
+            $validated['organization_name'],
+            $validated['contact_first_name'],
+            $validated['contact_last_name'],
+            $validated['email'],
+            $validated['phone'],
+            $validated['address_1'],
+            $validated['city'],
+            $validated['province'],
+            $validated['postal_code'],
+            $validated['category'],
+            $validated['patients_type'],
+            $validated['weekly_expecting_parents'],
+            $validated['number_of_packages']
         );
         wp_mail($notify, $subject, $body);
     }
@@ -820,3 +862,477 @@ function hcr_handle_submission()
 
 add_action('admin_post_nopriv_hcr_winners_register', 'hcr_handle_submission');
 add_action('admin_post_hcr_winners_register', 'hcr_handle_submission');
+
+function hcr_register_admin_menu()
+{
+    add_menu_page(
+        __('HC registrations', 'pambers-hc-registration'),
+        __('HC registrations', 'pambers-hc-registration'),
+        'manage_options',
+        HCR_ADMIN_PAGE_SLUG,
+        'hcr_render_admin_submissions_page',
+        'dashicons-clipboard',
+        26
+    );
+}
+
+add_action('admin_menu', 'hcr_register_admin_menu');
+
+function hcr_render_admin_submissions_page()
+{
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+    }
+
+    if (!empty($_GET['action']) && $_GET['action'] === 'edit' && !empty($_GET['id'])) {
+        $editId = absint($_GET['id']);
+        if ($editId > 0) {
+            hcr_render_submission_edit($editId);
+
+            return;
+        }
+    }
+
+    if (!empty($_GET['view'])) {
+        $viewId = absint($_GET['view']);
+        if ($viewId > 0) {
+            hcr_render_submission_detail($viewId);
+
+            return;
+        }
+    }
+
+    $list_table = new HCR_Submissions_List_Table();
+    $list_table->prepare_items();
+
+    $notice = isset($_GET['hcr_notice']) ? sanitize_key(wp_unslash($_GET['hcr_notice'])) : '';
+    ?>
+    <div class="wrap">
+        <h1 class="wp-heading-inline"><?php esc_html_e('Pambers Swaddlers HC Registration Submissions', 'pambers-hc-registration'); ?></h1>
+        <hr class="wp-header-end">
+        <?php if ($notice === 'saved') : ?>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pambers-hc-registration'); ?></p></div>
+        <?php elseif ($notice === 'deleted') : ?>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission deleted.', 'pambers-hc-registration'); ?></p></div>
+        <?php elseif ($notice === 'error') : ?>
+            <div class="notice notice-error is-dismissible"><p><?php echo esc_html(isset($_GET['hcr_err']) ? sanitize_text_field(wp_unslash((string) $_GET['hcr_err'])) : __('Something went wrong.', 'pambers-hc-registration')); ?></p></div>
+        <?php endif; ?>
+        <form method="get">
+            <input type="hidden" name="page" value="<?php echo esc_attr(HCR_ADMIN_PAGE_SLUG); ?>">
+            <?php $list_table->display(); ?>
+        </form>
+    </div>
+    <?php
+}
+
+/**
+ * @param int $id Submission primary key.
+ */
+function hcr_render_submission_detail($id)
+{
+    global $wpdb;
+
+    $table = hcr_get_submissions_table_name();
+    $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    if ($exists !== $table) {
+        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pambers-hc-registration') . '</p></div>';
+
+        return;
+    }
+
+    $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM `{$table}` WHERE id = %d", $id));
+    if (!$row) {
+        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pambers-hc-registration') . '</p></div>';
+
+        return;
+    }
+
+    $hcr_no = isset($_GET['hcr_no']) ? absint(wp_unslash($_GET['hcr_no'])) : 0;
+
+    $back_url = add_query_arg(['page' => HCR_ADMIN_PAGE_SLUG], admin_url('admin.php'));
+    $edit_url = add_query_arg(
+        array_filter(
+            [
+                'page' => HCR_ADMIN_PAGE_SLUG,
+                'action' => 'edit',
+                'id' => (int) $row->id,
+                'hcr_no' => $hcr_no > 0 ? $hcr_no : null,
+            ]
+        ),
+        admin_url('admin.php')
+    );
+    $delete_url = wp_nonce_url(
+        add_query_arg(
+            [
+                'action' => 'hcr_delete_submission',
+                'id' => (int) $row->id,
+            ],
+            admin_url('admin-post.php')
+        ),
+        'hcr_delete_submission_' . (int) $row->id
+    );
+    $confirm_js = wp_json_encode(__('Delete this submission? This cannot be undone.', 'pambers-hc-registration'));
+
+    $fields = [
+        'organization_name' => __('Organization', 'pambers-hc-registration'),
+        'contact_first_name' => __('Contact first name', 'pambers-hc-registration'),
+        'contact_last_name' => __('Contact last name', 'pambers-hc-registration'),
+        'email' => __('Email', 'pambers-hc-registration'),
+        'job_title' => __('Job title', 'pambers-hc-registration'),
+        'department' => __('Department', 'pambers-hc-registration'),
+        'phone' => __('Phone', 'pambers-hc-registration'),
+        'extension' => __('Extension', 'pambers-hc-registration'),
+        'address_1' => __('Address', 'pambers-hc-registration'),
+        'suite' => __('Suite', 'pambers-hc-registration'),
+        'city' => __('City', 'pambers-hc-registration'),
+        'province' => __('Province', 'pambers-hc-registration'),
+        'postal_code' => __('Postal code', 'pambers-hc-registration'),
+        'category' => __('Category', 'pambers-hc-registration'),
+        'patients_type' => __('Patients type', 'pambers-hc-registration'),
+        'weekly_expecting_parents' => __('Expecting parents (weekly)', 'pambers-hc-registration'),
+        'number_of_packages' => __('Packages', 'pambers-hc-registration'),
+        'confirmed_distribution' => __('Confirmed distribution', 'pambers-hc-registration'),
+        'created_at' => __('Submitted', 'pambers-hc-registration'),
+    ];
+    ?>
+    <div class="wrap hcr-submission-detail">
+        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('No. %d', 'pambers-hc-registration'), $hcr_no)) : esc_html__('Submission', 'pambers-hc-registration'); ?></h1>
+        <?php if (!empty($_GET['hcr_notice']) && sanitize_key(wp_unslash($_GET['hcr_notice'])) === 'saved') : ?>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pambers-hc-registration'); ?></p></div>
+        <?php endif; ?>
+        <p><a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Back to list', 'pambers-hc-registration'); ?></a></p>
+        <table class="widefat striped" style="max-width:920px;">
+            <tbody>
+            <?php foreach ($fields as $key => $label) : ?>
+                <tr>
+                    <th scope="row" style="width:220px;"><?php echo esc_html($label); ?></th>
+                    <td>
+                        <?php
+                        $val = isset($row->$key) ? (string) $row->$key : '';
+                        if ($key === 'confirmed_distribution') {
+                            echo (int) $val === 1 ? esc_html__('Yes', 'pambers-hc-registration') : esc_html__('No', 'pambers-hc-registration');
+                        } elseif ($key === 'email' && $val !== '') {
+                            echo '<a href="' . esc_url('mailto:' . $val) . '">' . esc_html($val) . '</a>';
+                        } elseif ($key === 'created_at' && $val !== '') {
+                            $ts = strtotime($val);
+                            echo $ts ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts)) : esc_html($val);
+                        } else {
+                            echo $val !== '' ? esc_html($val) : '—';
+                        }
+                        ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="submit" style="max-width:920px;">
+            <a class="button button-primary" href="<?php echo esc_url($edit_url); ?>"><?php esc_html_e('Edit', 'pambers-hc-registration'); ?></a>
+            <a class="button button-link-delete" href="<?php echo esc_url($delete_url); ?>" onclick="return window.confirm(<?php echo $confirm_js; ?>);"><?php esc_html_e('Delete', 'pambers-hc-registration'); ?></a>
+        </p>
+    </div>
+    <?php
+}
+
+/**
+ * @param int $id Submission primary key.
+ */
+function hcr_render_submission_edit($id)
+{
+    global $wpdb;
+
+    $table = hcr_get_submissions_table_name();
+    $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    if ($exists !== $table) {
+        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pambers-hc-registration') . '</p></div>';
+
+        return;
+    }
+
+    $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM `{$table}` WHERE id = %d", $id));
+    if (!$row) {
+        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pambers-hc-registration') . '</p></div>';
+
+        return;
+    }
+
+    $hcr_no = isset($_GET['hcr_no']) ? absint(wp_unslash($_GET['hcr_no'])) : 0;
+
+    $back_list = add_query_arg(['page' => HCR_ADMIN_PAGE_SLUG], admin_url('admin.php'));
+    $back_view = add_query_arg(
+        array_filter(
+            [
+                'page' => HCR_ADMIN_PAGE_SLUG,
+                'view' => (int) $row->id,
+                'hcr_no' => $hcr_no > 0 ? $hcr_no : null,
+            ]
+        ),
+        admin_url('admin.php')
+    );
+
+    $v = static function ($key) use ($row) {
+        return isset($row->$key) ? (string) $row->$key : '';
+    };
+
+    $provinces = hcr_get_canadian_provinces();
+    ?>
+    <div class="wrap">
+        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('Edit — No. %d', 'pambers-hc-registration'), $hcr_no)) : esc_html__('Edit submission', 'pambers-hc-registration'); ?></h1>
+        <?php
+        $admNotice = isset($_GET['hcr_notice']) ? sanitize_key(wp_unslash($_GET['hcr_notice'])) : '';
+        if ($admNotice === 'error' && !empty($_GET['hcr_err'])) :
+            $errMsg = sanitize_text_field(wp_unslash((string) $_GET['hcr_err']));
+            ?>
+            <div class="notice notice-error is-dismissible"><p><?php echo esc_html($errMsg); ?></p></div>
+        <?php endif; ?>
+        <p>
+            <a href="<?php echo esc_url($back_list); ?>">&larr; <?php esc_html_e('Back to list', 'pambers-hc-registration'); ?></a>
+            &nbsp;|&nbsp;
+            <a href="<?php echo esc_url($back_view); ?>"><?php esc_html_e('View detail', 'pambers-hc-registration'); ?></a>
+        </p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="hcr-admin-edit-form">
+            <?php wp_nonce_field('hcr_save_submission_' . (int) $row->id); ?>
+            <input type="hidden" name="action" value="hcr_save_submission">
+            <input type="hidden" name="submission_id" value="<?php echo (int) $row->id; ?>">
+            <input type="hidden" name="hcr_display_no" value="<?php echo $hcr_no > 0 ? (int) $hcr_no : ''; ?>">
+
+            <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><label for="hcr-adm-org"><?php esc_html_e('Organization', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="organization_name" id="hcr-adm-org" type="text" class="regular-text" value="<?php echo esc_attr($v('organization_name')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-fn"><?php esc_html_e('Contact first name', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="contact_first_name" id="hcr-adm-fn" type="text" class="regular-text" value="<?php echo esc_attr($v('contact_first_name')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-ln"><?php esc_html_e('Contact last name', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="contact_last_name" id="hcr-adm-ln" type="text" class="regular-text" value="<?php echo esc_attr($v('contact_last_name')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-em"><?php esc_html_e('Email', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="email" id="hcr-adm-em" type="email" class="regular-text" value="<?php echo esc_attr($v('email')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-job"><?php esc_html_e('Job title', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="job_title" id="hcr-adm-job" type="text" class="regular-text" value="<?php echo esc_attr($v('job_title')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-dept"><?php esc_html_e('Department', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="department" id="hcr-adm-dept" type="text" class="regular-text" value="<?php echo esc_attr($v('department')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-ph"><?php esc_html_e('Phone', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="phone" id="hcr-adm-ph" type="text" class="regular-text" value="<?php echo esc_attr($v('phone')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-ext"><?php esc_html_e('Extension', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="extension" id="hcr-adm-ext" type="text" class="regular-text" value="<?php echo esc_attr($v('extension')); ?>"></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-a1"><?php esc_html_e('Address', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="address_1" id="hcr-adm-a1" type="text" class="large-text" value="<?php echo esc_attr($v('address_1')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-suite"><?php esc_html_e('Suite', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="suite" id="hcr-adm-suite" type="text" class="regular-text" value="<?php echo esc_attr($v('suite')); ?>"></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-city"><?php esc_html_e('City', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="city" id="hcr-adm-city" type="text" class="regular-text" value="<?php echo esc_attr($v('city')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-prov"><?php esc_html_e('Province', 'pambers-hc-registration'); ?></label></th>
+                    <td>
+                        <select name="province" id="hcr-adm-prov" required>
+                            <option value=""><?php esc_html_e('Select…', 'pambers-hc-registration'); ?></option>
+                            <?php foreach ($provinces as $abbr => $label) : ?>
+                                <option value="<?php echo esc_attr($abbr); ?>" <?php selected($v('province'), $abbr); ?>><?php echo esc_html($abbr . ' — ' . $label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-postal"><?php esc_html_e('Postal code', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="postal_code" id="hcr-adm-postal" type="text" class="regular-text" value="<?php echo esc_attr($v('postal_code')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Category', 'pambers-hc-registration'); ?></th>
+                    <td>
+                        <?php foreach (hcr_get_registration_categories() as $cat) : ?>
+                            <label style="display:inline-block;margin-right:12px;">
+                                <input type="radio" name="category" value="<?php echo esc_attr($cat); ?>" <?php checked($v('category'), $cat); ?> required>
+                                <?php echo esc_html($cat); ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Patients type', 'pambers-hc-registration'); ?></th>
+                    <td>
+                        <?php foreach (hcr_get_patients_types() as $pt) : ?>
+                            <label style="display:inline-block;margin-right:12px;">
+                                <input type="radio" name="patients_type" value="<?php echo esc_attr($pt); ?>" <?php checked($v('patients_type'), $pt); ?> required>
+                                <?php echo esc_html($pt); ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-weekly"><?php esc_html_e('Expecting parents (weekly)', 'pambers-hc-registration'); ?></label></th>
+                    <td><input name="weekly_expecting_parents" id="hcr-adm-weekly" type="text" class="small-text" value="<?php echo esc_attr($v('weekly_expecting_parents')); ?>" required></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Packages', 'pambers-hc-registration'); ?></th>
+                    <td>
+                        <label><input type="radio" name="number_of_packages" value="12" <?php checked($v('number_of_packages'), '12'); ?> required> 12</label>
+                        &nbsp;&nbsp;
+                        <label><input type="radio" name="number_of_packages" value="24" <?php checked($v('number_of_packages'), '24'); ?>> 24</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Confirmation', 'pambers-hc-registration'); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="confirmed_distribution" value="1" <?php checked((int) $v('confirmed_distribution'), 1); ?> required>
+                            <?php esc_html_e('Confirmed distribution statement', 'pambers-hc-registration'); ?>
+                        </label>
+                    </td>
+                </tr>
+            </table>
+
+            <?php submit_button(__('Save changes', 'pambers-hc-registration')); ?>
+        </form>
+    </div>
+    <?php
+}
+
+function hcr_handle_admin_delete_submission()
+{
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+    }
+
+    $id = isset($_GET['id']) ? absint($_GET['id']) : 0;
+    if ($id < 1) {
+        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Invalid submission.', 'pambers-hc-registration')]));
+        exit;
+    }
+
+    check_admin_referer('hcr_delete_submission_' . $id);
+
+    global $wpdb;
+    $table = hcr_get_submissions_table_name();
+    $wpdb->delete($table, ['id' => $id], ['%d']);
+
+    wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'deleted']));
+    exit;
+}
+
+function hcr_handle_admin_save_submission()
+{
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+    }
+
+    $id = isset($_POST['submission_id']) ? absint($_POST['submission_id']) : 0;
+    $display_no = isset($_POST['hcr_display_no']) ? absint(wp_unslash((string) $_POST['hcr_display_no'])) : 0;
+    if ($id < 1 || !isset($_POST['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), 'hcr_save_submission_' . $id)) {
+        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Security check failed.', 'pambers-hc-registration')]));
+        exit;
+    }
+
+    $input = [
+        'organization_name' => wp_unslash($_POST['organization_name'] ?? ''),
+        'contact_first_name' => wp_unslash($_POST['contact_first_name'] ?? ''),
+        'contact_last_name' => wp_unslash($_POST['contact_last_name'] ?? ''),
+        'email' => wp_unslash($_POST['email'] ?? ''),
+        'job_title' => wp_unslash($_POST['job_title'] ?? ''),
+        'department' => wp_unslash($_POST['department'] ?? ''),
+        'phone' => wp_unslash($_POST['phone'] ?? ''),
+        'extension' => wp_unslash($_POST['extension'] ?? ''),
+        'address_1' => wp_unslash($_POST['address_1'] ?? ''),
+        'suite' => wp_unslash($_POST['suite'] ?? ''),
+        'city' => wp_unslash($_POST['city'] ?? ''),
+        'province' => wp_unslash($_POST['province'] ?? ''),
+        'postal_code' => wp_unslash($_POST['postal_code'] ?? ''),
+        'category' => wp_unslash($_POST['category'] ?? ''),
+        'patients_type' => wp_unslash($_POST['patients_type'] ?? ''),
+        'weekly_expecting_parents' => wp_unslash($_POST['weekly_expecting_parents'] ?? ''),
+        'number_of_packages' => wp_unslash($_POST['number_of_packages'] ?? ''),
+        'confirmed_distribution' => !empty($_POST['confirmed_distribution']) ? '1' : '',
+    ];
+
+    $validated = hcr_validate_submission_row($input, true);
+    if (is_wp_error($validated)) {
+        wp_safe_redirect(
+            hcr_admin_submissions_list_url(
+                array_filter(
+                    [
+                        'hcr_notice' => 'error',
+                        'hcr_err' => $validated->get_error_message(),
+                        'action' => 'edit',
+                        'id' => $id,
+                        'hcr_no' => $display_no > 0 ? $display_no : null,
+                    ]
+                )
+            )
+        );
+        exit;
+    }
+
+    global $wpdb;
+    $table = hcr_get_submissions_table_name();
+    $wpdb->update(
+        $table,
+        $validated,
+        ['id' => $id],
+        [
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+            '%s', '%s', '%d',
+        ],
+        ['%d']
+    );
+
+    if ($wpdb->last_error !== '') {
+        wp_safe_redirect(
+            hcr_admin_submissions_list_url(
+                array_filter(
+                    [
+                        'hcr_notice' => 'error',
+                        'hcr_err' => __('Could not save changes.', 'pambers-hc-registration'),
+                        'action' => 'edit',
+                        'id' => $id,
+                        'hcr_no' => $display_no > 0 ? $display_no : null,
+                    ]
+                )
+            )
+        );
+        exit;
+    }
+
+    wp_safe_redirect(
+        add_query_arg(
+            array_filter(
+                [
+                    'page' => HCR_ADMIN_PAGE_SLUG,
+                    'view' => $id,
+                    'hcr_notice' => 'saved',
+                    'hcr_no' => $display_no > 0 ? $display_no : null,
+                ]
+            ),
+            admin_url('admin.php')
+        )
+    );
+    exit;
+}
+
+/**
+ * @param array<string,string> $args Query args merged onto admin list URL.
+ */
+function hcr_admin_submissions_list_url(array $args = [])
+{
+    return add_query_arg(array_merge(['page' => HCR_ADMIN_PAGE_SLUG], $args), admin_url('admin.php'));
+}
+
+add_action('admin_post_hcr_delete_submission', 'hcr_handle_admin_delete_submission');
+add_action('admin_post_hcr_save_submission', 'hcr_handle_admin_save_submission');
