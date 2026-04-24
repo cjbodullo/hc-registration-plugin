@@ -28,8 +28,8 @@ class HCR_Submissions_List_Table extends WP_List_Table
     {
         return [
             'hcr_no' => __('No.', 'pambers-hc-registration'),
-            'created_at' => __('Submitted', 'pambers-hc-registration'),
             'organization_name' => __('Organization', 'pambers-hc-registration'),
+            'created_at' => __('Submitted', 'pambers-hc-registration'),
             'contact' => __('Contact', 'pambers-hc-registration'),
             'email' => __('Email', 'pambers-hc-registration'),
             'city' => __('City', 'pambers-hc-registration'),

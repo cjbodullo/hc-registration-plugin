@@ -24,7 +24,7 @@
 }
 
 .hcr-shell .font-weight-bold {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .hcr-shell .d-block {
@@ -277,7 +277,7 @@
 
 /* Bold group headings: charcoal-grey instead of default black */
 .hcr-form label.font-weight-bold {
-  color: #5c6570;
+  color: #616a75;
 }
 
 /* Match photo release section headings: .wpr-form .form-section h3 */
@@ -294,11 +294,7 @@
 }
 
 /* First question in bottom block: same color as section titles (General / Shipping) */
-.hcr-form label.hcr-late-fields-top-label {
-  color: #36535f;
-  font-weight: 600;
-  font-size: 16px;
-}
+
 
 @media (max-width: 768px) {
   .hcr-topbar {
@@ -319,19 +315,54 @@
     no-repeat right calc(0.375em + 0.1875rem) center / calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
 
-.hcr-form .form-check-input.is-valid {
-  outline: 2px solid #28a745;
-  outline-offset: 1px;
+/* Radios: neutral ring, selected = green control + label, invalid group = red all */
+.hcr-form input[type='radio'].form-check-input {
+  accent-color: #b8c2c9;
 }
 
-.hcr-form .form-check-input.is-invalid {
-  outline: 2px solid #dc3545;
-  outline-offset: 1px;
+.hcr-form input[type='radio'].form-check-input:checked,
+.hcr-form input[type='radio'].form-check-input.is-valid {
+  accent-color: #28a745;
 }
 
-.hcr-form input[type='radio'].form-check-input,
+.hcr-form input[type='radio'].form-check-input.is-invalid {
+  accent-color: #dc3545;
+}
+
+.hcr-form input[type='radio'].form-check-input:checked + .form-check-label,
+.hcr-form input[type='radio'].form-check-input.is-valid + .form-check-label {
+  color: #28a745;
+}
+
+.hcr-form input[type='radio'].form-check-input.is-invalid + .form-check-label {
+  color: #dc3545;
+}
+
+/* Checkbox: teal when OK; invalid = red border + red label (like reference form) */
 .hcr-form input[type='checkbox'].form-check-input {
   accent-color: #66cccc;
+}
+
+.hcr-form input[type='checkbox'].form-check-input.is-invalid {
+  accent-color: #dc3545;
+  box-shadow: 0 0 0 1px #dc3545;
+  outline: none;
+  border-radius: 4px;
+}
+
+.hcr-form input[type='checkbox'].form-check-input.is-invalid + .form-check-label {
+  color: #dc3545;
+}
+
+.hcr-form input[type='checkbox'].form-check-input:checked + .form-check-label,
+.hcr-form input[type='checkbox'].form-check-input.is-valid + .form-check-label {
+  color: #28a745;
+}
+
+.hcr-form input[type='checkbox'].form-check-input:checked,
+.hcr-form input[type='checkbox'].form-check-input.is-valid {
+  accent-color: #28a745;
+  box-shadow: none;
 }
 
 /* Pill teal buttons (Previous outline + primary solid) */
@@ -606,7 +637,6 @@
   margin-top: 0.2rem;
   flex-shrink: 0;
   border-radius: 2px;
-  accent-color: #66cccc;
   cursor: pointer;
 }
 

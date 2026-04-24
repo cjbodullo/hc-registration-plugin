@@ -368,7 +368,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         <div class="hcr-title"><?php esc_html_e('PAMBERS SWADDLERS HC REGISTRATION', 'pambers-hc-registration'); ?></div>
                     </div>
 
-                    <form class="hcr-form px-3 pb-3" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" novalidate>
+                    <form class="hcr-form px-3 pb-3 mt-3" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" novalidate>
                         <input type="hidden" name="action" value="<?php echo esc_attr(HCR_POST_ACTION); ?>">
                         <input type="hidden" name="redirect_to" value="<?php echo esc_url($redirectUrl); ?>">
                         <input type="hidden" name="hcr_success_redirect" value="<?php echo esc_url($successRedirectUrl); ?>">
@@ -525,7 +525,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary"><?php esc_html_e('Submit', 'pambers-hc-registration'); ?></button>
+                            <button type="submit" class="btn btn-primary"><?php esc_html_e('Register', 'pambers-hc-registration'); ?></button>
                         </div>
                     </form>
 
