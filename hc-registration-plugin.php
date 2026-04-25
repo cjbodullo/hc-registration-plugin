@@ -42,13 +42,13 @@ function hcr_maybe_install_table()
     $sql = "CREATE TABLE {$table} (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         organization_name VARCHAR(255) NULL DEFAULT NULL,
-        contact_first_name VARCHAR(120) NULL DEFAULT NULL,
+        contact_first_name VARCHAR(250) NULL DEFAULT NULL,
         contact_last_name VARCHAR(120) NULL DEFAULT NULL,
-        email VARCHAR(190) NULL DEFAULT NULL,
-        job_title VARCHAR(190) NULL DEFAULT NULL,
-        department VARCHAR(190) NULL DEFAULT NULL,
+        email VARCHAR(250) NULL DEFAULT NULL,
+        job_title VARCHAR(250) NULL DEFAULT NULL,
+        department VARCHAR(250) NULL DEFAULT NULL,
         phone VARCHAR(40) NULL DEFAULT NULL,
-        extension VARCHAR(20) NULL DEFAULT NULL,
+        extension VARCHAR(250) NULL DEFAULT NULL,
         address_1 VARCHAR(255) NULL DEFAULT NULL,
         suite VARCHAR(120) NULL DEFAULT NULL,
         city VARCHAR(120) NULL DEFAULT NULL,
@@ -516,7 +516,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                                     <label class="form-check-label" for="hcr-packages-24">24</label>
                                 </div>
                             </div>
-                            <div class="form-group hcr-confirm-check">
+                            <div class="form-group">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmDistribution" name="confirmDistribution" value="1" required>
                                     <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pambers-hc-registration'); ?></label>
@@ -1141,7 +1141,7 @@ function hcr_render_submission_edit($id)
                 </tr>
                 <tr>
                     <th scope="row"><label for="hcr-adm-a1"><?php esc_html_e('Address', 'pambers-hc-registration'); ?></label></th>
-                    <td><input name="address_1" id="hcr-adm-a1" type="text" class="large-text" value="<?php echo esc_attr($v('address_1')); ?>" required></td>
+                    <td><input name="address_1" id="hcr-adm-a1" type="text" class="regular-text" value="<?php echo esc_attr($v('address_1')); ?>" required></td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="hcr-adm-suite"><?php esc_html_e('Suite', 'pambers-hc-registration'); ?></label></th>
