@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: Pambers Swaddlers HC Registration
- * Description: Shortcode form for Pambers Swaddlers HC registration.
+ * Plugin Name: Pampers Swaddlers Healthcare Centres Registration
+ * Description: Shortcode form for Pampers Swaddlers healthcare centres registration.
  * Version: 1.0.0
  * Author: BabyBrands
- * Text Domain: pambers-hc-registration
+ * Text Domain: pampers-hc-registration
  */
 
 if (!defined('ABSPATH')) {
@@ -169,24 +169,24 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
         $city === '' || $province === '' || $postal === '' || $category === '' || $patientsType === '' ||
         $weeklyExpecting === '' || !in_array($numberOfPackages, ['12', '24'], true)
     ) {
-        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
+        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pampers-hc-registration'));
     }
 
     if ($require_confirm && (!$confirmDistribution || !$confirmPackage)) {
-        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
+        return new WP_Error('hcr_required', __('Please complete all required fields.', 'pampers-hc-registration'));
     }
 
     if ($extension !== '' && !ctype_digit($extension)) {
-        return new WP_Error('hcr_extension', __('Extension must contain digits only.', 'pambers-hc-registration'));
+        return new WP_Error('hcr_extension', __('Extension must contain digits only.', 'pampers-hc-registration'));
     }
 
     if (!preg_match('/^[A-Z]\d[A-Z] \d[A-Z]\d$/', $postal)) {
-        return new WP_Error('hcr_postal', __('Please enter a valid postal code (format A1A 1A1).', 'pambers-hc-registration'));
+        return new WP_Error('hcr_postal', __('Please enter a valid postal code (format A1A 1A1).', 'pampers-hc-registration'));
     }
 
     $digits = preg_replace('/\D/', '', $phone);
     if (strlen($digits) !== 10) {
-        return new WP_Error('hcr_phone', __('Please enter a valid 10-digit phone number.', 'pambers-hc-registration'));
+        return new WP_Error('hcr_phone', __('Please enter a valid 10-digit phone number.', 'pampers-hc-registration'));
     }
 
     return [
@@ -254,7 +254,7 @@ function hcr_build_feedback_url($status, $message = '', $redirectUrl = '')
 }
 
 /**
- * Shortcode: [pambers_hc_registration]
+ * Shortcode: [pampers_hc_registration]
  *
  * Attributes:
  * - thank_you_url — optional custom URL after success
@@ -263,7 +263,7 @@ function hcr_build_feedback_url($status, $message = '', $redirectUrl = '')
  */
 function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 {
-    $shortcodeTag = $tag !== '' ? $tag : 'pambers_hc_registration';
+    $shortcodeTag = $tag !== '' ? $tag : 'pampers_hc_registration';
     $atts = shortcode_atts(
         [
             'thank_you_url' => '',
@@ -315,20 +315,20 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
             <?php if ($isSuccess) : ?>
                 <div class="hcr-thankyou hcr-thankyou-page">
                     <div class="hcr-thankyou-card">
-                        <div class="hcr-thankyou-badge"><?php esc_html_e('PAMBERS SWADDLERS HC REGISTRATION RECEIVED', 'pambers-hc-registration'); ?></div>
-                        <h1 class="hcr-thankyou-card-title"><?php esc_html_e('Thank You!', 'pambers-hc-registration'); ?></h1>
-                        <p class="hcr-thankyou-card-lead"><?php esc_html_e('We have received your form.', 'pambers-hc-registration'); ?></p>
+                        <div class="hcr-thankyou-badge"><?php esc_html_e('PAMPERS SWADDLERS HEALTHCARE CENTRES REGISTRATION RECEIVED', 'pampers-hc-registration'); ?></div>
+                        <h1 class="hcr-thankyou-card-title"><?php esc_html_e('Thank You!', 'pampers-hc-registration'); ?></h1>
+                        <p class="hcr-thankyou-card-lead"><?php esc_html_e('We have received your form.', 'pampers-hc-registration'); ?></p>
                         <div class="hcr-thankyou-banner-wrap text-center">
                             <img class="hcr-thankyou-banner" src="<?php echo esc_url($assets['thankyou_banner']); ?>" alt="">
                         </div>
                         <p class="hcr-thankyou-card-text">
-                            <?php esc_html_e('We will review your submission. If you have any questions, please contact', 'pambers-hc-registration'); ?>
+                            <?php esc_html_e('We will review your submission. If you have any questions, please contact', 'pampers-hc-registration'); ?>
                             <a href="mailto:<?php echo esc_attr($contactEmail); ?>"><?php echo esc_html($contactEmail); ?></a>
                         </p>
-                        <a class="btn btn-primary hcr-thankyou-cta" href="<?php echo esc_url($formPageUrl); ?>"><?php esc_html_e('Submit another form', 'pambers-hc-registration'); ?></a>
+                        <a class="btn btn-primary hcr-thankyou-cta" href="<?php echo esc_url($formPageUrl); ?>"><?php esc_html_e('Submit another form', 'pampers-hc-registration'); ?></a>
                         <div class="hcr-thankyou-card-footer">
-                            <div class="hcr-powered-by"><?php esc_html_e('Powered by Samplits', 'pambers-hc-registration'); ?></div>
-                            <img src="<?php echo esc_url($assets['samplits_logo']); ?>" alt="<?php esc_attr_e('Samplits Logo', 'pambers-hc-registration'); ?>">
+                            <div class="hcr-powered-by"><?php esc_html_e('Powered by Samplits', 'pampers-hc-registration'); ?></div>
+                            <img src="<?php echo esc_url($assets['samplits_logo']); ?>" alt="<?php esc_attr_e('Samplits Logo', 'pampers-hc-registration'); ?>">
                         </div>
                     </div>
                 </div>
@@ -364,12 +364,12 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 
             <?php if (!$isSuccess) : ?>
                 <div class="hcr-form-container">
-                    <div class="p-3">
+                    <div class="p-3 pb-0">
                         <img class="hcr-header-image" src="<?php echo esc_url($assets['step1']); ?>" alt="">
                     </div>
 
                     <div class="hcr-topbar">
-                        <div class="hcr-title"><?php esc_html_e('PAMBERS SWADDLERS HC REGISTRATION', 'pambers-hc-registration'); ?></div>
+                        <div class="hcr-title"><?php esc_html_e('PAMPERS SWADDLERS HEALTHCARE CENTRES REGISTRATION', 'pampers-hc-registration'); ?></div>
                     </div>
 
                     <form class="hcr-form px-3 pb-3 mt-3" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" novalidate>
@@ -379,22 +379,22 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         <input type="hidden" name="hcr_notification_email" value="<?php echo esc_attr($notifyEmail); ?>">
                         <?php wp_nonce_field(HCR_POST_ACTION, 'hcr_nonce'); ?>
 
-                        <h3 class="h6 font-weight-bold mb-3 hcr-section-title"><?php esc_html_e('General Information', 'pambers-hc-registration'); ?></h3>
+                        <h3 class="h6 font-weight-bold mb-3 hcr-section-title"><?php esc_html_e('General Information', 'pampers-hc-registration'); ?></h3>
 
                         <div class="form-group">
-                            <label class="font-weight-bold d-block" for="hcr-name">*<?php esc_html_e('Name of the organization', 'pambers-hc-registration'); ?></label>
+                            <label class="font-weight-bold d-block" for="hcr-name">*<?php esc_html_e('Name of the organization', 'pampers-hc-registration'); ?></label>
                             <input type="text" class="form-control" id="hcr-name" name="name" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-firstName">*<?php esc_html_e('Contact First Name', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-firstName">*<?php esc_html_e('Contact First Name', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-firstName" name="firstName" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-lastName">*<?php esc_html_e('Contact Last Name', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-lastName">*<?php esc_html_e('Contact Last Name', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-lastName" name="lastName" required>
                                 </div>
                             </div>
@@ -402,52 +402,52 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-email">*<?php esc_html_e('Email Address', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-email">*<?php esc_html_e('Email Address', 'pampers-hc-registration'); ?></label>
                                     <input type="email" class="form-control" id="hcr-email" name="email" required>
-                                    <div class="invalid-feedback" id="hcr-emailError" style="display:none;"><?php esc_html_e('Invalid email address', 'pambers-hc-registration'); ?></div>
+                                    <div class="invalid-feedback" id="hcr-emailError" style="display:none;"><?php esc_html_e('Invalid email address', 'pampers-hc-registration'); ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-job">*<?php esc_html_e('Job Title', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-job">*<?php esc_html_e('Job Title', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-job" name="job" required>
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold d-block" for="hcr-department">*<?php esc_html_e('Department/Unit', 'pambers-hc-registration'); ?></label>
+                            <label class="font-weight-bold d-block" for="hcr-department">*<?php esc_html_e('Department/Unit', 'pampers-hc-registration'); ?></label>
                             <input type="text" class="form-control" id="hcr-department" name="department" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-phone">*<?php esc_html_e('Telephone Number', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-phone">*<?php esc_html_e('Telephone Number', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-phone" name="phone" required>
-                                    <div class="invalid-feedback" id="hcr-phoneError" style="display:none;"><?php esc_html_e('Please enter a valid phone number', 'pambers-hc-registration'); ?></div>
+                                    <div class="invalid-feedback" id="hcr-phoneError" style="display:none;"><?php esc_html_e('Please enter a valid phone number', 'pampers-hc-registration'); ?></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-extension"><?php esc_html_e('Extension', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-extension"><?php esc_html_e('Extension', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-extension" name="extension">
-                                    <div class="invalid-feedback" id="hcr-extensionError" style="display:none;"><?php esc_html_e('Please enter numbers only', 'pambers-hc-registration'); ?></div>
+                                    <div class="invalid-feedback" id="hcr-extensionError" style="display:none;"><?php esc_html_e('Please enter numbers only', 'pampers-hc-registration'); ?></div>
                                 </div>
                             </div>
                         </div>
 
                         <hr>
-                        <h3 class="h6 font-weight-bold mb-3 hcr-section-title"><?php esc_html_e('Shipping Information', 'pambers-hc-registration'); ?></h3>
+                        <h3 class="h6 font-weight-bold mb-3 hcr-section-title"><?php esc_html_e('Shipping Information', 'pampers-hc-registration'); ?></h3>
 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-address1">*<?php esc_html_e('Address 1', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-address1">*<?php esc_html_e('Address 1', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-address1" name="address1" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-suite"><?php esc_html_e('Suite #', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-suite"><?php esc_html_e('Suite #', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-suite" name="suite">
                                 </div>
                             </div>
@@ -455,15 +455,15 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-city">*<?php esc_html_e('City', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-city">*<?php esc_html_e('City', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-city" name="city" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-province">*<?php esc_html_e('Province', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-province">*<?php esc_html_e('Province', 'pampers-hc-registration'); ?></label>
                                     <select class="form-control" id="hcr-province" name="province" required>
-                                        <option value=""><?php esc_html_e('Select Province', 'pambers-hc-registration'); ?></option>
+                                        <option value=""><?php esc_html_e('Select Province', 'pampers-hc-registration'); ?></option>
                                         <?php foreach ($provinces as $abbr => $label) : ?>
                                             <option value="<?php echo esc_attr($abbr); ?>"><?php echo esc_html($abbr . ' - ' . $label); ?></option>
                                         <?php endforeach; ?>
@@ -472,15 +472,15 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label class="font-weight-bold d-block" for="hcr-postalCode">*<?php esc_html_e('Postal Code', 'pambers-hc-registration'); ?></label>
+                                    <label class="font-weight-bold d-block" for="hcr-postalCode">*<?php esc_html_e('Postal Code', 'pampers-hc-registration'); ?></label>
                                     <input type="text" class="form-control" id="hcr-postalCode" name="postalCode" required>
-                                    <div class="invalid-feedback" id="hcr-postalCodeError" style="display:none;"><?php esc_html_e('Format: XNX NXN', 'pambers-hc-registration'); ?></div>
+                                    <div class="invalid-feedback" id="hcr-postalCodeError" style="display:none;"><?php esc_html_e('Format: XNX NXN', 'pampers-hc-registration'); ?></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-group mt-3">
-                            <label class="font-weight-bold d-block">*<?php esc_html_e('Category', 'pambers-hc-registration'); ?></label>
+                            <label class="font-weight-bold d-block">*<?php esc_html_e('Category', 'pampers-hc-registration'); ?></label>
                             <?php foreach (hcr_get_registration_categories() as $cat) :
                                 $id = 'hcr-category-' . sanitize_title($cat);
                                 ?>
@@ -492,7 +492,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                         </div>
 
                         <div class="form-group">
-                            <label class="font-weight-bold d-block">*<?php esc_html_e('Identify the majority of patients you cater to', 'pambers-hc-registration'); ?></label>
+                            <label class="font-weight-bold d-block">*<?php esc_html_e('Identify the majority of patients you cater to', 'pampers-hc-registration'); ?></label>
                             <?php foreach (hcr_get_patients_types() as $pt) : ?>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="patientsType" id="hcr-patientsType-<?php echo esc_attr(strtolower($pt)); ?>" value="<?php echo esc_attr($pt); ?>" required>
@@ -505,12 +505,12 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 
                         <div class="hcr-late-fields">
                             <div class="form-group">
-                                <label class="font-weight-bold d-block hcr-late-fields-top-label" for="hcr-weeklyExpecting">*<?php esc_html_e('Approximately how many expecting parents do you see on a weekly basis?', 'pambers-hc-registration'); ?></label>
+                                <label class="font-weight-bold d-block hcr-late-fields-top-label" for="hcr-weeklyExpecting">*<?php esc_html_e('Approximately how many expecting parents do you see on a weekly basis?', 'pampers-hc-registration'); ?></label>
                                 <input type="text" class="form-control" id="hcr-weeklyExpecting" name="weeklyExpecting" required inputmode="numeric" pattern="[0-9]*" autocomplete="off">
-                                <div class="invalid-feedback" id="hcr-weeklyExpectingError" style="display:none;"><?php esc_html_e('Please enter a whole number.', 'pambers-hc-registration'); ?></div>
+                                <div class="invalid-feedback" id="hcr-weeklyExpectingError" style="display:none;"><?php esc_html_e('Please enter a whole number.', 'pampers-hc-registration'); ?></div>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold d-block">*<?php esc_html_e('Number of packages you would like', 'pambers-hc-registration'); ?></label>
+                                <label class="font-weight-bold d-block">*<?php esc_html_e('Number of packages you would like', 'pampers-hc-registration'); ?></label>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="numberOfPackages" id="hcr-packages-12" value="12" required>
                                     <label class="form-check-label" for="hcr-packages-12">12</label>
@@ -523,23 +523,23 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                             <div class="form-group">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmDistribution" name="confirmDistribution" value="1" required>
-                                    <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pambers-hc-registration'); ?></label>
+                                    <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pampers-hc-registration'); ?></label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmPackage" name="confirmPackage" value="1" required>
-                                    <label class="form-check-label" for="hcr-confirmPackage"><?php esc_html_e('One sample package per expecting parent.', 'pambers-hc-registration'); ?></label>
+                                    <label class="form-check-label" for="hcr-confirmPackage"><?php esc_html_e('One sample package per expecting parent.', 'pampers-hc-registration'); ?></label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary"><?php esc_html_e('Register', 'pambers-hc-registration'); ?></button>
+                            <button type="submit" class="btn btn-primary"><?php esc_html_e('Register', 'pampers-hc-registration'); ?></button>
                         </div>
                     </form>
 
                     <div class="hcr-footer p-4 hcr-thankyou-card-footer">
-                        <div class="hcr-powered-by"><?php esc_html_e('Powered by Samplits', 'pambers-hc-registration'); ?></div>
-                        <img src="<?php echo esc_url($assets['samplits_logo']); ?>" alt="<?php esc_attr_e('Samplits Logo', 'pambers-hc-registration'); ?>">
+                        <div class="hcr-powered-by"><?php esc_html_e('Powered by Samplits', 'pampers-hc-registration'); ?></div>
+                        <img src="<?php echo esc_url($assets['samplits_logo']); ?>" alt="<?php esc_attr_e('Samplits Logo', 'pampers-hc-registration'); ?>">
                     </div>
                 </div>
                 <script>
@@ -775,7 +775,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
     return ob_get_clean();
 }
 
-add_shortcode('pambers_hc_registration', 'hcr_render_form_shortcode');
+add_shortcode('pampers_hc_registration', 'hcr_render_form_shortcode');
 
 function hcr_handle_submission()
 {
@@ -803,7 +803,7 @@ function hcr_handle_submission()
         !isset($_POST['hcr_nonce']) ||
         !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['hcr_nonce'])), $nonce_action)
     ) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Security check failed. Please try again.', 'pambers-hc-registration'), $redirectUrl));
+        wp_safe_redirect(hcr_build_feedback_url('error', __('Security check failed. Please try again.', 'pampers-hc-registration'), $redirectUrl));
         exit;
     }
     global $wpdb;
@@ -847,7 +847,7 @@ function hcr_handle_submission()
     );
 
     if (!$inserted) {
-        wp_safe_redirect(hcr_build_feedback_url('error', __('Could not save your submission. Please try again later.', 'pambers-hc-registration'), $redirectUrl));
+        wp_safe_redirect(hcr_build_feedback_url('error', __('Could not save your submission. Please try again later.', 'pampers-hc-registration'), $redirectUrl));
         exit;
     }
 
@@ -887,8 +887,8 @@ add_action('admin_post_hcr_submit_registration', 'hcr_handle_submission');
 function hcr_register_admin_menu()
 {
     add_menu_page(
-        __('HC registrations', 'pambers-hc-registration'),
-        __('HC registrations', 'pambers-hc-registration'),
+        __('HC registrations', 'pampers-hc-registration'),
+        __('HC registrations', 'pampers-hc-registration'),
         'manage_options',
         HCR_ADMIN_PAGE_SLUG,
         'hcr_render_admin_submissions_page',
@@ -902,7 +902,7 @@ add_action('admin_menu', 'hcr_register_admin_menu');
 function hcr_render_admin_submissions_page()
 {
     if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+        wp_die(esc_html__('You do not have permission to access this page.', 'pampers-hc-registration'));
     }
 
     if (!empty($_GET['action']) && $_GET['action'] === 'edit' && !empty($_GET['id'])) {
@@ -929,14 +929,14 @@ function hcr_render_admin_submissions_page()
     $notice = isset($_GET['hcr_notice']) ? sanitize_key(wp_unslash($_GET['hcr_notice'])) : '';
     ?>
     <div class="wrap">
-        <h1 class="wp-heading-inline"><?php esc_html_e('Pambers Swaddlers HC Registration Submissions', 'pambers-hc-registration'); ?></h1>
+        <h1 class="wp-heading-inline"><?php esc_html_e('Pampers Swaddlers Healthcare Centres Registration Submissions', 'pampers-hc-registration'); ?></h1>
         <hr class="wp-header-end">
         <?php if ($notice === 'saved') : ?>
-            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pambers-hc-registration'); ?></p></div>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pampers-hc-registration'); ?></p></div>
         <?php elseif ($notice === 'deleted') : ?>
-            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission deleted.', 'pambers-hc-registration'); ?></p></div>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission deleted.', 'pampers-hc-registration'); ?></p></div>
         <?php elseif ($notice === 'error') : ?>
-            <div class="notice notice-error is-dismissible"><p><?php echo esc_html(isset($_GET['hcr_err']) ? sanitize_text_field(wp_unslash((string) $_GET['hcr_err'])) : __('Something went wrong.', 'pambers-hc-registration')); ?></p></div>
+            <div class="notice notice-error is-dismissible"><p><?php echo esc_html(isset($_GET['hcr_err']) ? sanitize_text_field(wp_unslash((string) $_GET['hcr_err'])) : __('Something went wrong.', 'pampers-hc-registration')); ?></p></div>
         <?php endif; ?>
         <form method="get">
             <input type="hidden" name="page" value="<?php echo esc_attr(HCR_ADMIN_PAGE_SLUG); ?>">
@@ -956,14 +956,14 @@ function hcr_render_submission_detail($id)
     $table = hcr_get_submissions_table_name();
     $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
     if ($exists !== $table) {
-        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pambers-hc-registration') . '</p></div>';
+        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pampers-hc-registration') . '</p></div>';
 
         return;
     }
 
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM `{$table}` WHERE id = %d", $id));
     if (!$row) {
-        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pambers-hc-registration') . '</p></div>';
+        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pampers-hc-registration') . '</p></div>';
 
         return;
     }
@@ -992,37 +992,37 @@ function hcr_render_submission_detail($id)
         ),
         'hcr_delete_submission_' . (int) $row->id
     );
-    $confirm_js = wp_json_encode(__('Delete this submission? This cannot be undone.', 'pambers-hc-registration'));
+    $confirm_js = wp_json_encode(__('Delete this submission? This cannot be undone.', 'pampers-hc-registration'));
 
     $fields = [
-        'organization_name' => __('Organization', 'pambers-hc-registration'),
-        'contact_first_name' => __('Contact first name', 'pambers-hc-registration'),
-        'contact_last_name' => __('Contact last name', 'pambers-hc-registration'),
-        'email' => __('Email', 'pambers-hc-registration'),
-        'job_title' => __('Job title', 'pambers-hc-registration'),
-        'department' => __('Department', 'pambers-hc-registration'),
-        'phone' => __('Phone', 'pambers-hc-registration'),
-        'extension' => __('Extension', 'pambers-hc-registration'),
-        'address_1' => __('Address', 'pambers-hc-registration'),
-        'suite' => __('Suite', 'pambers-hc-registration'),
-        'city' => __('City', 'pambers-hc-registration'),
-        'province' => __('Province', 'pambers-hc-registration'),
-        'postal_code' => __('Postal code', 'pambers-hc-registration'),
-        'category' => __('Category', 'pambers-hc-registration'),
-        'patients_type' => __('Patients type', 'pambers-hc-registration'),
-        'weekly_expecting_parents' => __('Expecting parents (weekly)', 'pambers-hc-registration'),
-        'number_of_packages' => __('Packages', 'pambers-hc-registration'),
-        'confirmed_distribution' => __('Confirmed distribution', 'pambers-hc-registration'),
-        'confirmed_package' => __('One sample package per expecting parent', 'pambers-hc-registration'),
-        'created_at' => __('Submitted', 'pambers-hc-registration'),
+        'organization_name' => __('Organization', 'pampers-hc-registration'),
+        'contact_first_name' => __('Contact first name', 'pampers-hc-registration'),
+        'contact_last_name' => __('Contact last name', 'pampers-hc-registration'),
+        'email' => __('Email', 'pampers-hc-registration'),
+        'job_title' => __('Job title', 'pampers-hc-registration'),
+        'department' => __('Department', 'pampers-hc-registration'),
+        'phone' => __('Phone', 'pampers-hc-registration'),
+        'extension' => __('Extension', 'pampers-hc-registration'),
+        'address_1' => __('Address', 'pampers-hc-registration'),
+        'suite' => __('Suite', 'pampers-hc-registration'),
+        'city' => __('City', 'pampers-hc-registration'),
+        'province' => __('Province', 'pampers-hc-registration'),
+        'postal_code' => __('Postal code', 'pampers-hc-registration'),
+        'category' => __('Category', 'pampers-hc-registration'),
+        'patients_type' => __('Patients type', 'pampers-hc-registration'),
+        'weekly_expecting_parents' => __('Expecting parents (weekly)', 'pampers-hc-registration'),
+        'number_of_packages' => __('Packages', 'pampers-hc-registration'),
+        'confirmed_distribution' => __('Confirmed distribution', 'pampers-hc-registration'),
+        'confirmed_package' => __('One sample package per expecting parent', 'pampers-hc-registration'),
+        'created_at' => __('Submitted', 'pampers-hc-registration'),
     ];
     ?>
     <div class="wrap hcr-submission-detail">
-        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('No. %d', 'pambers-hc-registration'), $hcr_no)) : esc_html__('Submission', 'pambers-hc-registration'); ?></h1>
+        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('No. %d', 'pampers-hc-registration'), $hcr_no)) : esc_html__('Submission', 'pampers-hc-registration'); ?></h1>
         <?php if (!empty($_GET['hcr_notice']) && sanitize_key(wp_unslash($_GET['hcr_notice'])) === 'saved') : ?>
-            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pambers-hc-registration'); ?></p></div>
+            <div class="notice notice-success is-dismissible"><p><?php esc_html_e('Submission updated.', 'pampers-hc-registration'); ?></p></div>
         <?php endif; ?>
-        <p><a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Back to list', 'pambers-hc-registration'); ?></a></p>
+        <p><a href="<?php echo esc_url($back_url); ?>">&larr; <?php esc_html_e('Back to list', 'pampers-hc-registration'); ?></a></p>
         <table class="widefat striped" style="max-width:920px;">
             <tbody>
             <?php foreach ($fields as $key => $label) : ?>
@@ -1032,7 +1032,7 @@ function hcr_render_submission_detail($id)
                         <?php
                         $val = isset($row->$key) ? (string) $row->$key : '';
                         if ($key === 'confirmed_distribution' || $key === 'confirmed_package') {
-                            echo (int) $val === 1 ? esc_html__('Yes', 'pambers-hc-registration') : esc_html__('No', 'pambers-hc-registration');
+                            echo (int) $val === 1 ? esc_html__('Yes', 'pampers-hc-registration') : esc_html__('No', 'pampers-hc-registration');
                         } elseif ($key === 'email' && $val !== '') {
                             echo '<a href="' . esc_url('mailto:' . $val) . '">' . esc_html($val) . '</a>';
                         } elseif ($key === 'created_at' && $val !== '') {
@@ -1048,8 +1048,8 @@ function hcr_render_submission_detail($id)
             </tbody>
         </table>
         <p class="submit" style="max-width:920px;">
-            <a class="button button-primary" href="<?php echo esc_url($edit_url); ?>"><?php esc_html_e('Edit', 'pambers-hc-registration'); ?></a>
-            <a class="button button-link-delete" href="<?php echo esc_url($delete_url); ?>" onclick="return window.confirm(<?php echo $confirm_js; ?>);"><?php esc_html_e('Delete', 'pambers-hc-registration'); ?></a>
+            <a class="button button-primary" href="<?php echo esc_url($edit_url); ?>"><?php esc_html_e('Edit', 'pampers-hc-registration'); ?></a>
+            <a class="button button-link-delete" href="<?php echo esc_url($delete_url); ?>" onclick="return window.confirm(<?php echo $confirm_js; ?>);"><?php esc_html_e('Delete', 'pampers-hc-registration'); ?></a>
         </p>
     </div>
     <?php
@@ -1065,14 +1065,14 @@ function hcr_render_submission_edit($id)
     $table = hcr_get_submissions_table_name();
     $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
     if ($exists !== $table) {
-        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pambers-hc-registration') . '</p></div>';
+        echo '<div class="wrap"><p>' . esc_html__('Submissions table is not available.', 'pampers-hc-registration') . '</p></div>';
 
         return;
     }
 
     $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM `{$table}` WHERE id = %d", $id));
     if (!$row) {
-        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pambers-hc-registration') . '</p></div>';
+        echo '<div class="wrap"><p>' . esc_html__('Submission not found.', 'pampers-hc-registration') . '</p></div>';
 
         return;
     }
@@ -1098,7 +1098,7 @@ function hcr_render_submission_edit($id)
     $provinces = hcr_get_canadian_provinces();
     ?>
     <div class="wrap">
-        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('Edit — No. %d', 'pambers-hc-registration'), $hcr_no)) : esc_html__('Edit submission', 'pambers-hc-registration'); ?></h1>
+        <h1><?php echo $hcr_no > 0 ? esc_html(sprintf(__('Edit — No. %d', 'pampers-hc-registration'), $hcr_no)) : esc_html__('Edit submission', 'pampers-hc-registration'); ?></h1>
         <?php
         $admNotice = isset($_GET['hcr_notice']) ? sanitize_key(wp_unslash($_GET['hcr_notice'])) : '';
         if ($admNotice === 'error' && !empty($_GET['hcr_err'])) :
@@ -1107,9 +1107,9 @@ function hcr_render_submission_edit($id)
             <div class="notice notice-error is-dismissible"><p><?php echo esc_html($errMsg); ?></p></div>
         <?php endif; ?>
         <p>
-            <a href="<?php echo esc_url($back_list); ?>">&larr; <?php esc_html_e('Back to list', 'pambers-hc-registration'); ?></a>
+            <a href="<?php echo esc_url($back_list); ?>">&larr; <?php esc_html_e('Back to list', 'pampers-hc-registration'); ?></a>
             &nbsp;|&nbsp;
-            <a href="<?php echo esc_url($back_view); ?>"><?php esc_html_e('View detail', 'pambers-hc-registration'); ?></a>
+            <a href="<?php echo esc_url($back_view); ?>"><?php esc_html_e('View detail', 'pampers-hc-registration'); ?></a>
         </p>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="hcr-admin-edit-form">
             <?php wp_nonce_field('hcr_save_submission_' . (int) $row->id); ?>
@@ -1119,54 +1119,54 @@ function hcr_render_submission_edit($id)
 
             <table class="form-table" role="presentation">
                 <tr>
-                    <th scope="row"><label for="hcr-adm-org"><?php esc_html_e('Organization', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-org"><?php esc_html_e('Organization', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="organization_name" id="hcr-adm-org" type="text" class="regular-text" value="<?php echo esc_attr($v('organization_name')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-fn"><?php esc_html_e('Contact first name', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-fn"><?php esc_html_e('Contact first name', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="contact_first_name" id="hcr-adm-fn" type="text" class="regular-text" value="<?php echo esc_attr($v('contact_first_name')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-ln"><?php esc_html_e('Contact last name', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-ln"><?php esc_html_e('Contact last name', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="contact_last_name" id="hcr-adm-ln" type="text" class="regular-text" value="<?php echo esc_attr($v('contact_last_name')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-em"><?php esc_html_e('Email', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-em"><?php esc_html_e('Email', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="email" id="hcr-adm-em" type="email" class="regular-text" value="<?php echo esc_attr($v('email')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-job"><?php esc_html_e('Job title', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-job"><?php esc_html_e('Job title', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="job_title" id="hcr-adm-job" type="text" class="regular-text" value="<?php echo esc_attr($v('job_title')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-dept"><?php esc_html_e('Department', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-dept"><?php esc_html_e('Department', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="department" id="hcr-adm-dept" type="text" class="regular-text" value="<?php echo esc_attr($v('department')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-ph"><?php esc_html_e('Phone', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-ph"><?php esc_html_e('Phone', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="phone" id="hcr-adm-ph" type="text" class="regular-text" value="<?php echo esc_attr($v('phone')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-ext"><?php esc_html_e('Extension', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-ext"><?php esc_html_e('Extension', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="extension" id="hcr-adm-ext" type="text" class="regular-text" value="<?php echo esc_attr($v('extension')); ?>"></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-a1"><?php esc_html_e('Address', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-a1"><?php esc_html_e('Address', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="address_1" id="hcr-adm-a1" type="text" class="regular-text" value="<?php echo esc_attr($v('address_1')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-suite"><?php esc_html_e('Suite', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-suite"><?php esc_html_e('Suite', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="suite" id="hcr-adm-suite" type="text" class="regular-text" value="<?php echo esc_attr($v('suite')); ?>"></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-city"><?php esc_html_e('City', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-city"><?php esc_html_e('City', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="city" id="hcr-adm-city" type="text" class="regular-text" value="<?php echo esc_attr($v('city')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-prov"><?php esc_html_e('Province', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-prov"><?php esc_html_e('Province', 'pampers-hc-registration'); ?></label></th>
                     <td>
                         <select name="province" id="hcr-adm-prov" required>
-                            <option value=""><?php esc_html_e('Select…', 'pambers-hc-registration'); ?></option>
+                            <option value=""><?php esc_html_e('Select…', 'pampers-hc-registration'); ?></option>
                             <?php foreach ($provinces as $abbr => $label) : ?>
                                 <option value="<?php echo esc_attr($abbr); ?>" <?php selected($v('province'), $abbr); ?>><?php echo esc_html($abbr . ' — ' . $label); ?></option>
                             <?php endforeach; ?>
@@ -1174,11 +1174,11 @@ function hcr_render_submission_edit($id)
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-postal"><?php esc_html_e('Postal code', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-postal"><?php esc_html_e('Postal code', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="postal_code" id="hcr-adm-postal" type="text" class="regular-text" value="<?php echo esc_attr($v('postal_code')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e('Category', 'pambers-hc-registration'); ?></th>
+                    <th scope="row"><?php esc_html_e('Category', 'pampers-hc-registration'); ?></th>
                     <td>
                         <?php foreach (hcr_get_registration_categories() as $cat) : ?>
                             <label style="display:inline-block;margin-right:12px;">
@@ -1189,7 +1189,7 @@ function hcr_render_submission_edit($id)
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e('Patients type', 'pambers-hc-registration'); ?></th>
+                    <th scope="row"><?php esc_html_e('Patients type', 'pampers-hc-registration'); ?></th>
                     <td>
                         <?php foreach (hcr_get_patients_types() as $pt) : ?>
                             <label style="display:inline-block;margin-right:12px;">
@@ -1200,11 +1200,11 @@ function hcr_render_submission_edit($id)
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><label for="hcr-adm-weekly"><?php esc_html_e('Expecting parents (weekly)', 'pambers-hc-registration'); ?></label></th>
+                    <th scope="row"><label for="hcr-adm-weekly"><?php esc_html_e('Expecting parents (weekly)', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="weekly_expecting_parents" id="hcr-adm-weekly" type="text" class="small-text" value="<?php echo esc_attr($v('weekly_expecting_parents')); ?>" required></td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e('Packages', 'pambers-hc-registration'); ?></th>
+                    <th scope="row"><?php esc_html_e('Packages', 'pampers-hc-registration'); ?></th>
                     <td>
                         <label><input type="radio" name="number_of_packages" value="12" <?php checked($v('number_of_packages'), '12'); ?> required> 12</label>
                         &nbsp;&nbsp;
@@ -1212,25 +1212,25 @@ function hcr_render_submission_edit($id)
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e('Confirmation', 'pambers-hc-registration'); ?></th>
+                    <th scope="row"><?php esc_html_e('Confirmation', 'pampers-hc-registration'); ?></th>
                     <td>
                         <p>
                             <label>
                                 <input type="checkbox" name="confirmed_distribution" value="1" <?php checked((int) $v('confirmed_distribution'), 1); ?> required>
-                                <?php esc_html_e('Confirmed distribution statement', 'pambers-hc-registration'); ?>
+                                <?php esc_html_e('Confirmed distribution statement', 'pampers-hc-registration'); ?>
                             </label>
                         </p>
                         <p>
                             <label>
                                 <input type="checkbox" name="confirmed_package" value="1" <?php checked((int) $v('confirmed_package'), 1); ?> required>
-                                <?php esc_html_e('One sample package per expecting parent.', 'pambers-hc-registration'); ?>
+                                <?php esc_html_e('One sample package per expecting parent.', 'pampers-hc-registration'); ?>
                             </label>
                         </p>
                     </td>
                 </tr>
             </table>
 
-            <?php submit_button(__('Save changes', 'pambers-hc-registration')); ?>
+            <?php submit_button(__('Save changes', 'pampers-hc-registration')); ?>
         </form>
     </div>
     <?php
@@ -1239,12 +1239,12 @@ function hcr_render_submission_edit($id)
 function hcr_handle_admin_delete_submission()
 {
     if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+        wp_die(esc_html__('You do not have permission to access this page.', 'pampers-hc-registration'));
     }
 
     $id = isset($_GET['id']) ? absint($_GET['id']) : 0;
     if ($id < 1) {
-        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Invalid submission.', 'pambers-hc-registration')]));
+        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Invalid submission.', 'pampers-hc-registration')]));
         exit;
     }
 
@@ -1261,13 +1261,13 @@ function hcr_handle_admin_delete_submission()
 function hcr_handle_admin_save_submission()
 {
     if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to access this page.', 'pambers-hc-registration'));
+        wp_die(esc_html__('You do not have permission to access this page.', 'pampers-hc-registration'));
     }
 
     $id = isset($_POST['submission_id']) ? absint($_POST['submission_id']) : 0;
     $display_no = isset($_POST['hcr_display_no']) ? absint(wp_unslash((string) $_POST['hcr_display_no'])) : 0;
     if ($id < 1 || !isset($_POST['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), 'hcr_save_submission_' . $id)) {
-        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Security check failed.', 'pambers-hc-registration')]));
+        wp_safe_redirect(hcr_admin_submissions_list_url(['hcr_notice' => 'error', 'hcr_err' => __('Security check failed.', 'pampers-hc-registration')]));
         exit;
     }
 
@@ -1330,7 +1330,7 @@ function hcr_handle_admin_save_submission()
                 array_filter(
                     [
                         'hcr_notice' => 'error',
-                        'hcr_err' => __('Could not save changes.', 'pambers-hc-registration'),
+                        'hcr_err' => __('Could not save changes.', 'pampers-hc-registration'),
                         'action' => 'edit',
                         'id' => $id,
                         'hcr_no' => $display_no > 0 ? $display_no : null,

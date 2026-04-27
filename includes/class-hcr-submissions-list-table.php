@@ -27,17 +27,17 @@ class HCR_Submissions_List_Table extends WP_List_Table
     public function get_columns()
     {
         return [
-            'hcr_no' => __('No.', 'pambers-hc-registration'),
-            'organization_name' => __('Organization', 'pambers-hc-registration'),
-            'created_at' => __('Submitted', 'pambers-hc-registration'),
-            'contact' => __('Contact', 'pambers-hc-registration'),
-            'email' => __('Email', 'pambers-hc-registration'),
-            'city' => __('City', 'pambers-hc-registration'),
-            'province' => __('Province', 'pambers-hc-registration'),
-            'category' => __('Category', 'pambers-hc-registration'),
-            'patients_type' => __('Patients', 'pambers-hc-registration'),
-            'number_of_packages' => __('Packages', 'pambers-hc-registration'),
-            'hcr_actions' => __('Actions', 'pambers-hc-registration'),
+            'hcr_no' => __('No.', 'pampers-hc-registration'),
+            'organization_name' => __('Organization', 'pampers-hc-registration'),
+            'created_at' => __('Submitted', 'pampers-hc-registration'),
+            'contact' => __('Contact', 'pampers-hc-registration'),
+            'email' => __('Email', 'pampers-hc-registration'),
+            'city' => __('City', 'pampers-hc-registration'),
+            'province' => __('Province', 'pampers-hc-registration'),
+            'category' => __('Category', 'pampers-hc-registration'),
+            'patients_type' => __('Patients', 'pampers-hc-registration'),
+            'number_of_packages' => __('Packages', 'pampers-hc-registration'),
+            'hcr_actions' => __('Actions', 'pampers-hc-registration'),
         ];
     }
 
@@ -53,7 +53,7 @@ class HCR_Submissions_List_Table extends WP_List_Table
 
     public function no_items()
     {
-        esc_html_e('No submissions yet.', 'pambers-hc-registration');
+        esc_html_e('No submissions yet.', 'pampers-hc-registration');
     }
 
     public function prepare_items()
@@ -166,17 +166,17 @@ class HCR_Submissions_List_Table extends WP_List_Table
             ),
             'hcr_delete_submission_' . $id
         );
-        $confirm = esc_js(__('Delete this submission? This cannot be undone.', 'pambers-hc-registration'));
+        $confirm = esc_js(__('Delete this submission? This cannot be undone.', 'pampers-hc-registration'));
 
         return sprintf(
             '<a class="button button-small" href="%1$s">%2$s</a> <a class="button button-small" href="%3$s">%4$s</a> <a class="button button-small button-link-delete" href="%5$s" onclick="return window.confirm(%6$s);">%7$s</a>',
             esc_url($viewUrl),
-            esc_html__('View', 'pambers-hc-registration'),
+            esc_html__('View', 'pampers-hc-registration'),
             esc_url($editUrl),
-            esc_html__('Edit', 'pambers-hc-registration'),
+            esc_html__('Edit', 'pampers-hc-registration'),
             esc_url($deleteUrl),
             wp_json_encode($confirm),
-            esc_html__('Delete', 'pambers-hc-registration')
+            esc_html__('Delete', 'pampers-hc-registration')
         );
     }
 

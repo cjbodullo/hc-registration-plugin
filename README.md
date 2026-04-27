@@ -1,8 +1,8 @@
-# Pambers Swaddlers HC Registration
+# Pampers Swaddlers Healthcare Centres Registration
 
 WordPress plugin that renders a healthcare-centre registration form via shortcode. Styling aligns with the **photo release** form (colours, section headings) and the distributor step-one field layout, without loading Bootstrap or jQuery from CDNs.
 
-**Text domain:** `pambers-hc-registration`  
+**Text domain:** `pampers-hc-registration`  
 **Version:** 1.0.0 (`HCR_VERSION` in the main plugin file).
 
 ## Requirements
@@ -12,14 +12,14 @@ WordPress plugin that renders a healthcare-centre registration form via shortcod
 ## Installation
 
 1. Copy the folder `hc-registration-plugin` into `wp-content/plugins/`.
-2. In **Plugins**, activate **Pambers Swaddlers HC Registration**.
+2. In **Plugins**, activate **Pampers Swaddlers Healthcare Centres Registration**.
 3. Add a shortcode to any page or post (Classic editor, Shortcode block, etc.).
 
 ## Shortcodes
 
 | Shortcode | Use |
 |-----------|-----|
-| `[pambers_hc_registration]` | Renders the registration form |
+| `[pampers_hc_registration]` | Renders the registration form |
 
 ### Attributes
 
@@ -32,7 +32,7 @@ WordPress plugin that renders a healthcare-centre registration form via shortcod
 **Example**
 
 ```text
-[pambers_hc_registration contact_email="support@example.com" notification_email="admin@example.com"]
+[pampers_hc_registration contact_email="support@example.com" notification_email="admin@example.com"]
 ```
 
 ## Form contents (summary)
@@ -82,7 +82,3 @@ Styles: `assets/css/hc-registration.css` (self-contained layout and form primiti
 - **Actions** column (last): **View** (read-only detail), **Edit** (full form, same validation as the public form), **Delete** (nonce-protected `admin-post.php` action; browser confirm before delete).
 - Detail screen also has **Edit** and **Delete** at the bottom. After a successful save you are returned to the detail view with a success notice.
 - Admin screen slug: `hcr-submissions` (`admin.php?page=hcr-submissions`).
-
-## Support
-
-For behaviour tied to other BabyBrands plugins (e.g. photo gallery / distributor forms), compare field names and styling in this plugin’s PHP and CSS under the same workspace.

@@ -244,13 +244,13 @@
   justify-content: center;
   gap: 18px;
   align-items: center;
-  padding: 18px 18px 14px;
+  padding: 0 28px 14px;
 }
 
 /* Match photo release main title: .wpr-container .header h1 */
 .hcr-title {
   color: #116b6b;
-  font-size: clamp(28px, 4.2vw, 36px);
+  font-size: clamp(24px, 4.2vw, 36px);
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.2;
