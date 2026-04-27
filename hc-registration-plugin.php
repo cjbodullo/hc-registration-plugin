@@ -59,6 +59,7 @@ function hcr_maybe_install_table()
         weekly_expecting_parents VARCHAR(120) NULL DEFAULT NULL,
         number_of_packages VARCHAR(10) NULL DEFAULT NULL,
         confirmed_distribution TINYINT(1) NOT NULL DEFAULT 0,
+        confirmed_package TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id),
         KEY idx_email (email),
@@ -121,7 +122,7 @@ function hcr_get_patients_types()
  * Validate submission fields (DB column keys). Used by public form and admin save.
  *
  * @param array<string,mixed> $input Raw values (e.g. from POST after wp_unslash).
- * @param bool $require_confirm Whether confirmed_distribution must be 1.
+ * @param bool $require_confirm Whether confirmed_distribution and confirmed_package must be 1.
  * @return array<string,mixed>|WP_Error Row for insert/update (nulls for empty optional strings).
  */
 function hcr_validate_submission_row(array $input, $require_confirm = true)
@@ -146,6 +147,8 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
     $numberOfPackages = sanitize_text_field($input['number_of_packages'] ?? '');
     $confirmRaw = $input['confirmed_distribution'] ?? '';
     $confirmDistribution = $confirmRaw === 1 || $confirmRaw === '1' || $confirmRaw === true;
+    $confirmPackageRaw = $input['confirmed_package'] ?? '';
+    $confirmPackage = $confirmPackageRaw === 1 || $confirmPackageRaw === '1' || $confirmPackageRaw === true;
 
     $allowedProvinces = array_keys(hcr_get_canadian_provinces());
     if ($province !== '' && !in_array($province, $allowedProvinces, true)) {
@@ -169,7 +172,7 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
         return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
     }
 
-    if ($require_confirm && !$confirmDistribution) {
+    if ($require_confirm && (!$confirmDistribution || !$confirmPackage)) {
         return new WP_Error('hcr_required', __('Please complete all required fields.', 'pambers-hc-registration'));
     }
 
@@ -205,6 +208,7 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
         'weekly_expecting_parents' => $weeklyExpecting,
         'number_of_packages' => $numberOfPackages,
         'confirmed_distribution' => $confirmDistribution ? 1 : 0,
+        'confirmed_package' => $confirmPackage ? 1 : 0,
     ];
 }
 
@@ -521,6 +525,10 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmDistribution" name="confirmDistribution" value="1" required>
                                     <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pambers-hc-registration'); ?></label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="hcr-confirmPackage" name="confirmPackage" value="1" required>
+                                    <label class="form-check-label" for="hcr-confirmPackage"><?php esc_html_e('One sample package per expecting parent.', 'pambers-hc-registration'); ?></label>
+                                </div>
                             </div>
                         </div>
 
@@ -819,6 +827,7 @@ function hcr_handle_submission()
         'weekly_expecting_parents' => wp_unslash($_POST['weeklyExpecting'] ?? ''),
         'number_of_packages' => wp_unslash($_POST['numberOfPackages'] ?? ''),
         'confirmed_distribution' => !empty($_POST['confirmDistribution']) ? wp_unslash($_POST['confirmDistribution']) : '',
+        'confirmed_package' => !empty($_POST['confirmPackage']) ? wp_unslash($_POST['confirmPackage']) : '',
     ];
 
     $validated = hcr_validate_submission_row($input, true);
@@ -833,7 +842,7 @@ function hcr_handle_submission()
         $validated,
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%d',
+            '%s', '%s', '%d', '%d',
         ]
     );
 
@@ -846,7 +855,7 @@ function hcr_handle_submission()
     if ($notify !== '' && is_email($notify) && apply_filters('hcr_send_notification_email', true, $wpdb->insert_id)) {
         $subject = sprintf('[%s] New HC registration', wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES));
         $body = sprintf(
-            "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\n",
+            "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\nOne sample package per parent: %s\n",
             $validated['organization_name'],
             $validated['contact_first_name'],
             $validated['contact_last_name'],
@@ -859,7 +868,8 @@ function hcr_handle_submission()
             $validated['category'],
             $validated['patients_type'],
             $validated['weekly_expecting_parents'],
-            $validated['number_of_packages']
+            $validated['number_of_packages'],
+            !empty($validated['confirmed_package']) ? 'yes' : 'no'
         );
         wp_mail($notify, $subject, $body);
     }
@@ -1003,6 +1013,7 @@ function hcr_render_submission_detail($id)
         'weekly_expecting_parents' => __('Expecting parents (weekly)', 'pambers-hc-registration'),
         'number_of_packages' => __('Packages', 'pambers-hc-registration'),
         'confirmed_distribution' => __('Confirmed distribution', 'pambers-hc-registration'),
+        'confirmed_package' => __('One sample package per expecting parent', 'pambers-hc-registration'),
         'created_at' => __('Submitted', 'pambers-hc-registration'),
     ];
     ?>
@@ -1020,7 +1031,7 @@ function hcr_render_submission_detail($id)
                     <td>
                         <?php
                         $val = isset($row->$key) ? (string) $row->$key : '';
-                        if ($key === 'confirmed_distribution') {
+                        if ($key === 'confirmed_distribution' || $key === 'confirmed_package') {
                             echo (int) $val === 1 ? esc_html__('Yes', 'pambers-hc-registration') : esc_html__('No', 'pambers-hc-registration');
                         } elseif ($key === 'email' && $val !== '') {
                             echo '<a href="' . esc_url('mailto:' . $val) . '">' . esc_html($val) . '</a>';
@@ -1203,10 +1214,18 @@ function hcr_render_submission_edit($id)
                 <tr>
                     <th scope="row"><?php esc_html_e('Confirmation', 'pambers-hc-registration'); ?></th>
                     <td>
-                        <label>
-                            <input type="checkbox" name="confirmed_distribution" value="1" <?php checked((int) $v('confirmed_distribution'), 1); ?> required>
-                            <?php esc_html_e('Confirmed distribution statement', 'pambers-hc-registration'); ?>
-                        </label>
+                        <p>
+                            <label>
+                                <input type="checkbox" name="confirmed_distribution" value="1" <?php checked((int) $v('confirmed_distribution'), 1); ?> required>
+                                <?php esc_html_e('Confirmed distribution statement', 'pambers-hc-registration'); ?>
+                            </label>
+                        </p>
+                        <p>
+                            <label>
+                                <input type="checkbox" name="confirmed_package" value="1" <?php checked((int) $v('confirmed_package'), 1); ?> required>
+                                <?php esc_html_e('One sample package per expecting parent.', 'pambers-hc-registration'); ?>
+                            </label>
+                        </p>
                     </td>
                 </tr>
             </table>
@@ -1271,6 +1290,7 @@ function hcr_handle_admin_save_submission()
         'weekly_expecting_parents' => wp_unslash($_POST['weekly_expecting_parents'] ?? ''),
         'number_of_packages' => wp_unslash($_POST['number_of_packages'] ?? ''),
         'confirmed_distribution' => !empty($_POST['confirmed_distribution']) ? '1' : '',
+        'confirmed_package' => !empty($_POST['confirmed_package']) ? '1' : '',
     ];
 
     $validated = hcr_validate_submission_row($input, true);
@@ -1299,7 +1319,7 @@ function hcr_handle_admin_save_submission()
         ['id' => $id],
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%d',
+            '%s', '%s', '%d', '%d',
         ],
         ['%d']
     );
