@@ -55,11 +55,13 @@ function hcr_maybe_install_table()
         province VARCHAR(10) NULL DEFAULT NULL,
         postal_code VARCHAR(25) NULL DEFAULT NULL,
         category VARCHAR(120) NULL DEFAULT NULL,
+        category_other VARCHAR(255) NULL DEFAULT NULL,
         patients_type VARCHAR(40) NULL DEFAULT NULL,
         weekly_expecting_parents VARCHAR(120) NULL DEFAULT NULL,
         number_of_packages VARCHAR(10) NULL DEFAULT NULL,
         confirmed_distribution TINYINT(1) NOT NULL DEFAULT 0,
         confirmed_package TINYINT(1) NOT NULL DEFAULT 0,
+        comments TEXT NULL DEFAULT NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY  (id),
         KEY idx_email (email),
@@ -103,7 +105,6 @@ function hcr_get_registration_categories()
         'Prenatal Instructor',
         'Hospital',
         'Dr. / OBGYN',
-        'Trade Show',
         'Pregnancy Centre',
         'Medical Centre',
         'Other',
@@ -142,6 +143,7 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
     $postalRaw = strtoupper(preg_replace('/\s+/', ' ', trim((string) ($input['postal_code'] ?? ''))));
     $postal = $postalRaw;
     $category = sanitize_text_field($input['category'] ?? '');
+    $categoryOther = sanitize_text_field((string) ($input['category_other'] ?? ''));
     $patientsType = sanitize_text_field($input['patients_type'] ?? '');
     $weeklyExpecting = preg_replace('/\D/', '', (string) ($input['weekly_expecting_parents'] ?? ''));
     $numberOfPackages = sanitize_text_field($input['number_of_packages'] ?? '');
@@ -149,6 +151,7 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
     $confirmDistribution = $confirmRaw === 1 || $confirmRaw === '1' || $confirmRaw === true;
     $confirmPackageRaw = $input['confirmed_package'] ?? '';
     $confirmPackage = $confirmPackageRaw === 1 || $confirmPackageRaw === '1' || $confirmPackageRaw === true;
+    $comments = sanitize_textarea_field((string) ($input['comments'] ?? ''));
 
     $allowedProvinces = array_keys(hcr_get_canadian_provinces());
     if ($province !== '' && !in_array($province, $allowedProvinces, true)) {
@@ -157,6 +160,10 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
 
     if ($category !== '' && !in_array($category, hcr_get_registration_categories(), true)) {
         $category = '';
+    }
+
+    if ($category !== 'Other') {
+        $categoryOther = '';
     }
 
     if ($patientsType !== '' && !in_array($patientsType, hcr_get_patients_types(), true)) {
@@ -189,6 +196,10 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
         return new WP_Error('hcr_phone', __('Please enter a valid 10-digit phone number.', 'pampers-hc-registration'));
     }
 
+    if ($category === 'Other' && trim($categoryOther) === '') {
+        return new WP_Error('hcr_required', __('Please specify your category.', 'pampers-hc-registration'));
+    }
+
     return [
         'organization_name' => $organization,
         'contact_first_name' => $first,
@@ -204,11 +215,13 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
         'province' => $province,
         'postal_code' => $postal,
         'category' => $category,
+        'category_other' => $categoryOther === '' ? null : $categoryOther,
         'patients_type' => $patientsType,
         'weekly_expecting_parents' => $weeklyExpecting,
         'number_of_packages' => $numberOfPackages,
         'confirmed_distribution' => $confirmDistribution ? 1 : 0,
         'confirmed_package' => $confirmPackage ? 1 : 0,
+        'comments' => $comments === '' ? null : $comments,
     ];
 }
 
@@ -489,6 +502,10 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                                     <label class="form-check-label" for="<?php echo esc_attr($id); ?>"><?php echo esc_html($cat); ?></label>
                                 </div>
                             <?php endforeach; ?>
+                            <div class="form-group mt-2 hcr-category-other" style="display:none;">
+                                <label class="font-weight-bold d-block" for="hcr-categoryOther"><?php esc_html_e('Other (please specify)', 'pampers-hc-registration'); ?></label>
+                                <input type="text" class="form-control hcr-small-text-input" id="hcr-categoryOther" name="categoryOther" maxlength="255">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -500,13 +517,12 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                                 </div>
                             <?php endforeach; ?>
                         </div>
-
-                        <hr class="hcr-late-fields-sep">
-
                         <div class="hcr-late-fields">
                             <div class="form-group">
-                                <label class="font-weight-bold d-block hcr-late-fields-top-label" for="hcr-weeklyExpecting">*<?php esc_html_e('Approximately how many expecting parents do you see on a weekly basis?', 'pampers-hc-registration'); ?></label>
-                                <input type="text" class="form-control" id="hcr-weeklyExpecting" name="weeklyExpecting" required inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                                <div class="hcr-inline-label-input">
+                                    <label class="font-weight-bold hcr-late-fields-top-label mb-0" for="hcr-weeklyExpecting">*<?php esc_html_e('Approximately how many expecting parents do you see on a weekly basis?', 'pampers-hc-registration'); ?></label>
+                                    <input type="text" class="form-control hcr-inline-small-input" id="hcr-weeklyExpecting" name="weeklyExpecting" required inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                                </div>
                                 <div class="invalid-feedback" id="hcr-weeklyExpectingError" style="display:none;"><?php esc_html_e('Please enter a whole number.', 'pampers-hc-registration'); ?></div>
                             </div>
                             <div class="form-group">
@@ -523,12 +539,16 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                             <div class="form-group">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmDistribution" name="confirmDistribution" value="1" required>
-                                    <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pampers-hc-registration'); ?></label>
+                                    <label class="form-check-label" for="hcr-confirmDistribution"><?php esc_html_e('* I confirm that our healthcare centre will distribute Pampers Swaddlers to expecting parents only, and we will kindly encourage parents to register using the QR code provided on the package to access additional support and resources.', 'pampers-hc-registration'); ?></label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="hcr-confirmPackage" name="confirmPackage" value="1" required>
-                                    <label class="form-check-label" for="hcr-confirmPackage"><?php esc_html_e('One sample package per expecting parent.', 'pampers-hc-registration'); ?></label>
+                                    <label class="form-check-label" for="hcr-confirmPackage"><?php esc_html_e('* One sample package per expecting parent.', 'pampers-hc-registration'); ?></label>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="font-weight-bold d-block" for="hcr-comments"><?php esc_html_e('Comments', 'pampers-hc-registration'); ?></label>
+                                <textarea class="form-control" id="hcr-comments" name="comments" rows="3" maxlength="1000"></textarea>
                             </div>
                         </div>
 
@@ -547,6 +567,26 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
                     var form = document.querySelector('.hcr-form');
                     if (!form || form.dataset.hcrReady === '1') return;
                     form.dataset.hcrReady = '1';
+
+                    var catOtherWrap = form.querySelector('.hcr-category-other');
+                    var catOtherInput = document.getElementById('hcr-categoryOther');
+                    function updateCategoryOther() {
+                        var selected = form.querySelector('input[name="category"]:checked');
+                        var isOther = selected && selected.value === 'Other';
+                        if (catOtherWrap) catOtherWrap.style.display = isOther ? 'block' : 'none';
+                        if (catOtherInput) {
+                            if (isOther) {
+                                catOtherInput.setAttribute('required', 'required');
+                            } else {
+                                catOtherInput.removeAttribute('required');
+                                catOtherInput.value = '';
+                            }
+                        }
+                    }
+                    form.addEventListener('change', function (e) {
+                        if (e && e.target && e.target.name === 'category') updateCategoryOther();
+                    });
+                    updateCategoryOther();
 
                     function formatPhone(value) {
                         if (!value) return value;
@@ -823,11 +863,13 @@ function hcr_handle_submission()
         'province' => wp_unslash($_POST['province'] ?? ''),
         'postal_code' => wp_unslash($_POST['postalCode'] ?? ''),
         'category' => wp_unslash($_POST['category'] ?? ''),
+        'category_other' => wp_unslash($_POST['categoryOther'] ?? ''),
         'patients_type' => wp_unslash($_POST['patientsType'] ?? ''),
         'weekly_expecting_parents' => wp_unslash($_POST['weeklyExpecting'] ?? ''),
         'number_of_packages' => wp_unslash($_POST['numberOfPackages'] ?? ''),
         'confirmed_distribution' => !empty($_POST['confirmDistribution']) ? wp_unslash($_POST['confirmDistribution']) : '',
         'confirmed_package' => !empty($_POST['confirmPackage']) ? wp_unslash($_POST['confirmPackage']) : '',
+        'comments' => wp_unslash($_POST['comments'] ?? ''),
     ];
 
     $validated = hcr_validate_submission_row($input, true);
@@ -842,7 +884,7 @@ function hcr_handle_submission()
         $validated,
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%d', '%d',
+            '%s', '%s', '%s', '%d', '%d', '%s',
         ]
     );
 
@@ -855,7 +897,7 @@ function hcr_handle_submission()
     if ($notify !== '' && is_email($notify) && apply_filters('hcr_send_notification_email', true, $wpdb->insert_id)) {
         $subject = sprintf('[%s] New HC registration', wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES));
         $body = sprintf(
-            "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\nOne sample package per parent: %s\n",
+            "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nCategory (other): %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\nOne sample package per parent: %s\nComments: %s\n",
             $validated['organization_name'],
             $validated['contact_first_name'],
             $validated['contact_last_name'],
@@ -866,10 +908,12 @@ function hcr_handle_submission()
             $validated['province'],
             $validated['postal_code'],
             $validated['category'],
+            isset($validated['category_other']) && $validated['category_other'] !== null ? $validated['category_other'] : '',
             $validated['patients_type'],
             $validated['weekly_expecting_parents'],
             $validated['number_of_packages'],
-            !empty($validated['confirmed_package']) ? 'yes' : 'no'
+            !empty($validated['confirmed_package']) ? 'yes' : 'no',
+            isset($validated['comments']) && $validated['comments'] !== null ? $validated['comments'] : ''
         );
         wp_mail($notify, $subject, $body);
     }
@@ -1009,11 +1053,13 @@ function hcr_render_submission_detail($id)
         'province' => __('Province', 'pampers-hc-registration'),
         'postal_code' => __('Postal code', 'pampers-hc-registration'),
         'category' => __('Category', 'pampers-hc-registration'),
+        'category_other' => __('Category (other)', 'pampers-hc-registration'),
         'patients_type' => __('Patients type', 'pampers-hc-registration'),
         'weekly_expecting_parents' => __('Expecting parents (weekly)', 'pampers-hc-registration'),
         'number_of_packages' => __('Packages', 'pampers-hc-registration'),
         'confirmed_distribution' => __('Confirmed distribution', 'pampers-hc-registration'),
         'confirmed_package' => __('One sample package per expecting parent', 'pampers-hc-registration'),
+        'comments' => __('Comments', 'pampers-hc-registration'),
         'created_at' => __('Submitted', 'pampers-hc-registration'),
     ];
     ?>
@@ -1038,6 +1084,8 @@ function hcr_render_submission_detail($id)
                         } elseif ($key === 'created_at' && $val !== '') {
                             $ts = strtotime($val);
                             echo $ts ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts)) : esc_html($val);
+                        } elseif ($key === 'comments' && $val !== '') {
+                            echo nl2br(esc_html($val));
                         } else {
                             echo $val !== '' ? esc_html($val) : '—';
                         }
@@ -1189,6 +1237,10 @@ function hcr_render_submission_edit($id)
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row"><label for="hcr-adm-cat-other"><?php esc_html_e('Category (other)', 'pampers-hc-registration'); ?></label></th>
+                    <td><input name="category_other" id="hcr-adm-cat-other" type="text" class="regular-text" value="<?php echo esc_attr($v('category_other')); ?>" maxlength="255"></td>
+                </tr>
+                <tr>
                     <th scope="row"><?php esc_html_e('Patients type', 'pampers-hc-registration'); ?></th>
                     <td>
                         <?php foreach (hcr_get_patients_types() as $pt) : ?>
@@ -1226,6 +1278,12 @@ function hcr_render_submission_edit($id)
                                 <?php esc_html_e('One sample package per expecting parent.', 'pampers-hc-registration'); ?>
                             </label>
                         </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="hcr-adm-comments"><?php esc_html_e('Comments', 'pampers-hc-registration'); ?></label></th>
+                    <td>
+                        <textarea name="comments" id="hcr-adm-comments" class="large-text" rows="4" maxlength="1000"><?php echo esc_textarea($v('comments')); ?></textarea>
                     </td>
                 </tr>
             </table>
@@ -1286,11 +1344,13 @@ function hcr_handle_admin_save_submission()
         'province' => wp_unslash($_POST['province'] ?? ''),
         'postal_code' => wp_unslash($_POST['postal_code'] ?? ''),
         'category' => wp_unslash($_POST['category'] ?? ''),
+        'category_other' => wp_unslash($_POST['category_other'] ?? ''),
         'patients_type' => wp_unslash($_POST['patients_type'] ?? ''),
         'weekly_expecting_parents' => wp_unslash($_POST['weekly_expecting_parents'] ?? ''),
         'number_of_packages' => wp_unslash($_POST['number_of_packages'] ?? ''),
         'confirmed_distribution' => !empty($_POST['confirmed_distribution']) ? '1' : '',
         'confirmed_package' => !empty($_POST['confirmed_package']) ? '1' : '',
+        'comments' => wp_unslash($_POST['comments'] ?? ''),
     ];
 
     $validated = hcr_validate_submission_row($input, true);
@@ -1319,7 +1379,7 @@ function hcr_handle_admin_save_submission()
         ['id' => $id],
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%d', '%d',
+            '%s', '%s', '%s', '%d', '%d', '%s',
         ],
         ['%d']
     );

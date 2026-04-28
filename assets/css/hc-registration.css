@@ -623,6 +623,41 @@
   margin-bottom: 0.5rem;
 }
 
+.hcr-form .hcr-small-text-input {
+  width: 260px;
+  max-width: 100%;
+}
+
+.hcr-form .hcr-small-text-input.form-control {
+  display: inline-block;
+}
+
+.hcr-form .hcr-inline-label-input {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hcr-form .hcr-inline-small-input {
+  width: 110px;
+  max-width: 110px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+@media (max-width: 576px) {
+  .hcr-form .hcr-inline-label-input {
+    display: block;
+  }
+
+  .hcr-form .hcr-inline-small-input {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 8px;
+    text-align: left;
+  }
+}
+
 .hcr-form .hcr-confirm-check .form-check {
   display: flex;
   align-items: flex-start;
