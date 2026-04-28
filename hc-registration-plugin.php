@@ -317,7 +317,7 @@ function hcr_render_form_shortcode($atts, $content = '', $tag = '')
 
     $assets = [
         'step1' => HCR_PLUGIN_URL . 'assets/images/step1.webp',
-        'samplits_logo' => HCR_PLUGIN_URL . 'assets/images/samplits-logo.png',
+        'samplits_logo' => HCR_PLUGIN_URL . 'assets/images/babybrands-logo.png',
         'thankyou_banner' => HCR_PLUGIN_URL . 'assets/images/distributors-banner-thankyou.webp',
     ];
 
