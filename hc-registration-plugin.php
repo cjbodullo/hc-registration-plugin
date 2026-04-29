@@ -17,6 +17,8 @@ define('HCR_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('HCR_ADMIN_PAGE_SLUG', 'hcr-submissions');
 /** Posted `action` / nonce scheme for public form (`admin-post.php`). */
 define('HCR_POST_ACTION', 'hcr_healthcare_register');
+/** Default timezone used when saving `created_at`. */
+define('HCR_CREATED_AT_TIMEZONE', 'America/New_York');
 
 require_once HCR_PLUGIN_PATH . 'includes/class-hcr-submissions-list-table.php';
 
@@ -28,6 +30,66 @@ function hcr_get_submissions_table_name()
     global $wpdb;
 
     return $wpdb->prefix . 'hc_registration_submissions';
+}
+
+/**
+ * Timezone used for `created_at` persistence and formatting.
+ *
+ * Filter: `hcr_created_at_timezone` (string $tzId).
+ *
+ * @return DateTimeZone
+ */
+function hcr_created_at_timezone()
+{
+    $tzId = (string) apply_filters('hcr_created_at_timezone', HCR_CREATED_AT_TIMEZONE);
+    if ($tzId === '') {
+        $tzId = HCR_CREATED_AT_TIMEZONE;
+    }
+
+    try {
+        return new DateTimeZone($tzId);
+    } catch (Exception $e) {
+        return new DateTimeZone('UTC');
+    }
+}
+
+/**
+ * @return string MySQL datetime in ET (or filtered timezone).
+ */
+function hcr_created_at_mysql()
+{
+    $tz = hcr_created_at_timezone();
+    try {
+        $dt = new DateTimeImmutable('now', $tz);
+
+        return $dt->format('Y-m-d H:i:s');
+    } catch (Exception $e) {
+        return gmdate('Y-m-d H:i:s');
+    }
+}
+
+/**
+ * Convert a stored MySQL datetime (assumed ET / filtered tz) to timestamp.
+ *
+ * @param string $mysqlDatetime "Y-m-d H:i:s"
+ * @return int|null
+ */
+function hcr_created_at_to_timestamp($mysqlDatetime)
+{
+    $mysqlDatetime = trim((string) $mysqlDatetime);
+    if ($mysqlDatetime === '') {
+        return null;
+    }
+
+    $tz = hcr_created_at_timezone();
+    $dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $mysqlDatetime, $tz);
+    if ($dt instanceof DateTimeImmutable) {
+        return $dt->getTimestamp();
+    }
+
+    $ts = strtotime($mysqlDatetime);
+
+    return $ts ? (int) $ts : null;
 }
 
 function hcr_maybe_install_table()
@@ -879,12 +941,13 @@ function hcr_handle_submission()
     }
 
     $table = hcr_get_submissions_table_name();
+    $validated['created_at'] = hcr_created_at_mysql();
     $inserted = $wpdb->insert(
         $table,
         $validated,
         [
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
-            '%s', '%s', '%s', '%d', '%d', '%s',
+            '%s', '%s', '%s', '%d', '%d', '%s', '%s',
         ]
     );
 
@@ -895,7 +958,7 @@ function hcr_handle_submission()
 
     $notify = sanitize_email(wp_unslash($_POST['hcr_notification_email'] ?? ''));
     if ($notify !== '' && is_email($notify) && apply_filters('hcr_send_notification_email', true, $wpdb->insert_id)) {
-        $subject = sprintf('[%s] New HC registration', wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES));
+        $subject = sprintf('[%s] New HC Registration', wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES));
         $body = sprintf(
             "Organization: %s\nContact: %s %s\nEmail: %s\nPhone: %s\nAddress: %s, %s, %s %s\nCategory: %s\nCategory (other): %s\nPatients: %s\nExpecting parents (weekly): %s\nPackages: %s\nConfirmed distribution: yes\nOne sample package per parent: %s\nComments: %s\n",
             $validated['organization_name'],
@@ -931,8 +994,8 @@ add_action('admin_post_hcr_submit_registration', 'hcr_handle_submission');
 function hcr_register_admin_menu()
 {
     add_menu_page(
-        __('HC registrations', 'pampers-hc-registration'),
-        __('HC registrations', 'pampers-hc-registration'),
+        __('HC Registrations', 'pampers-hc-registration'),
+        __('HC Registrations', 'pampers-hc-registration'),
         'manage_options',
         HCR_ADMIN_PAGE_SLUG,
         'hcr_render_admin_submissions_page',
@@ -1082,8 +1145,8 @@ function hcr_render_submission_detail($id)
                         } elseif ($key === 'email' && $val !== '') {
                             echo '<a href="' . esc_url('mailto:' . $val) . '">' . esc_html($val) . '</a>';
                         } elseif ($key === 'created_at' && $val !== '') {
-                            $ts = strtotime($val);
-                            echo $ts ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts)) : esc_html($val);
+                            $ts = hcr_created_at_to_timestamp($val);
+                            echo $ts ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts, hcr_created_at_timezone())) : esc_html($val);
                         } elseif ($key === 'comments' && $val !== '') {
                             echo nl2br(esc_html($val));
                         } else {

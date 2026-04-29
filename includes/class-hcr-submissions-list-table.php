@@ -186,9 +186,17 @@ class HCR_Submissions_List_Table extends WP_List_Table
             return '';
         }
 
-        $ts = strtotime((string) $item->created_at);
+        $ts = function_exists('hcr_created_at_to_timestamp')
+            ? hcr_created_at_to_timestamp((string) $item->created_at)
+            : strtotime((string) $item->created_at);
 
-        return esc_html($ts ? wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts) : (string) $item->created_at);
+        if (!$ts) {
+            return esc_html((string) $item->created_at);
+        }
+
+        $tz = function_exists('hcr_created_at_timezone') ? hcr_created_at_timezone() : null;
+
+        return esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $ts, $tz));
     }
 
     protected function column_contact($item)
