@@ -33,6 +33,115 @@ function hcr_get_submissions_table_name()
 }
 
 /**
+ * Build a WHERE fragment and prepare args for submission list / export search.
+ *
+ * @return array{sql:string,args:array<int,string>}
+ */
+function hcr_submissions_search_where_clause($wpdb, $search)
+{
+    $search = trim((string) $search);
+    if ($search === '') {
+        return ['sql' => '', 'args' => []];
+    }
+
+    $like = '%' . $wpdb->esc_like($search) . '%';
+    $fields = [
+        'organization_name',
+        'contact_first_name',
+        'contact_last_name',
+        'email',
+        'city',
+        'province',
+        'phone',
+        'postal_code',
+        'category',
+        'category_other',
+        'job_title',
+        'department',
+        'address_1',
+        'comments',
+    ];
+    $parts = [];
+    $args = [];
+    foreach ($fields as $field) {
+        $parts[] = '`' . $field . '` LIKE %s';
+        $args[] = $like;
+    }
+
+    return [
+        'sql' => '(' . implode(' OR ', $parts) . ')',
+        'args' => $args,
+    ];
+}
+
+/**
+ * CSV column order for exports (matches submissions table).
+ *
+ * @return string[]
+ */
+function hcr_submissions_csv_columns()
+{
+    return [
+        'no',
+        'organization_name',
+        'contact_first_name',
+        'contact_last_name',
+        'email',
+        'job_title',
+        'department',
+        'phone',
+        'extension',
+        'address_1',
+        'suite',
+        'city',
+        'province',
+        'postal_code',
+        'category',
+        'category_other',
+        'patients_type',
+        'weekly_expecting_parents',
+        'number_of_packages',
+        'confirmed_distribution',
+        'confirmed_package',
+        'comments',
+        'created_at',
+    ];
+}
+
+/**
+ * Attempt to fix common UTF-8/Windows-1252 mojibake (e.g. "Ã‰" -> "É", "â€™" -> "’").
+ *
+ * If conversion doesn't produce valid UTF-8, the original string is returned.
+ *
+ * @param string $value
+ * @return string
+ */
+function hcr_csv_normalize_value($value)
+{
+    $value = (string) $value;
+    if ($value === '') {
+        return $value;
+    }
+
+    // Normalize common punctuation to ASCII to avoid viewer-specific encoding issues.
+    $value = str_replace(
+        ["\u{2019}", "\u{2018}", "\u{201C}", "\u{201D}", "\u{2013}", "\u{2014}", "\u{2026}"],
+        ["'", "'", '"', '"', '-', '-', '...'],
+        $value
+    );
+
+    // Convert accented characters to closest ASCII equivalent for maximum compatibility.
+    if (function_exists('iconv')) {
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if (is_string($ascii) && $ascii !== '') {
+            return $ascii;
+        }
+    }
+
+    return $value;
+}
+
+/**
  * Timezone used for `created_at` persistence and formatting.
  *
  * Filter: `hcr_created_at_timezone` (string $tzId).
@@ -1006,6 +1115,85 @@ function hcr_register_admin_menu()
 
 add_action('admin_menu', 'hcr_register_admin_menu');
 
+function hcr_maybe_export_submissions_csv()
+{
+    if (empty($_GET['page']) || sanitize_key(wp_unslash((string) $_GET['page'])) !== HCR_ADMIN_PAGE_SLUG) {
+        return;
+    }
+    if (empty($_GET['hcr_export']) || sanitize_key(wp_unslash((string) $_GET['hcr_export'])) !== 'csv') {
+        return;
+    }
+
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to access this page.', 'pampers-hc-registration'));
+    }
+
+    check_admin_referer('hcr_export_csv');
+
+    global $wpdb;
+
+    $table = hcr_get_submissions_table_name();
+    $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    if ($exists !== $table) {
+        wp_die(esc_html__('Submissions table is not available.', 'pampers-hc-registration'));
+    }
+
+    $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash((string) $_GET['s'])) : '';
+    $cond = hcr_submissions_search_where_clause($wpdb, $search);
+
+    $sql = "SELECT * FROM `{$table}`";
+    if ($cond['sql'] !== '') {
+        $sql .= ' WHERE ' . $cond['sql'];
+    }
+    $sql .= ' ORDER BY `created_at` DESC, `id` DESC';
+
+    $rows = $cond['args'] === []
+        ? $wpdb->get_results($sql, ARRAY_A)
+        : $wpdb->get_results($wpdb->prepare($sql, ...$cond['args']), ARRAY_A);
+
+    if (!is_array($rows)) {
+        $rows = [];
+    }
+
+    $columns = hcr_submissions_csv_columns();
+    $filename = 'hc-registration-submissions-' . gmdate('Y-m-d') . '.csv';
+
+    nocache_headers();
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $out = fopen('php://output', 'wb');
+    if ($out === false) {
+        exit;
+    }
+
+    // Excel on Windows detects UTF-8 reliably when a BOM is present.
+    // (Some plain-text viewers may show it as "ï»¿" if opened with the wrong encoding.)
+
+    fputcsv($out, $columns);
+
+    $no = 0;
+    foreach ($rows as $row) {
+        $no++;
+        $line = [];
+        foreach ($columns as $col) {
+            if ($col === 'no') {
+                $line[] = (string) $no;
+                continue;
+            }
+
+            $val = isset($row[$col]) && $row[$col] !== null ? (string) $row[$col] : '';
+            $line[] = hcr_csv_normalize_value($val);
+        }
+        fputcsv($out, $line);
+    }
+
+    fclose($out);
+    exit;
+}
+
+add_action('admin_init', 'hcr_maybe_export_submissions_csv', 1);
+
 function hcr_render_admin_submissions_page()
 {
     if (!current_user_can('manage_options')) {
@@ -1047,6 +1235,12 @@ function hcr_render_admin_submissions_page()
         <?php endif; ?>
         <form method="get">
             <input type="hidden" name="page" value="<?php echo esc_attr(HCR_ADMIN_PAGE_SLUG); ?>">
+            <?php if (!empty($_GET['orderby'])) : ?>
+                <input type="hidden" name="orderby" value="<?php echo esc_attr(sanitize_key(wp_unslash((string) $_GET['orderby']))); ?>">
+            <?php endif; ?>
+            <?php if (!empty($_GET['order'])) : ?>
+                <input type="hidden" name="order" value="<?php echo esc_attr(strtoupper(sanitize_text_field(wp_unslash((string) $_GET['order']))) === 'ASC' ? 'ASC' : 'DESC'); ?>">
+            <?php endif; ?>
             <?php $list_table->display(); ?>
         </form>
     </div>

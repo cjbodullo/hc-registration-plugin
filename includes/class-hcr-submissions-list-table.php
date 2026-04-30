@@ -56,6 +56,36 @@ class HCR_Submissions_List_Table extends WP_List_Table
         esc_html_e('No submissions yet.', 'pampers-hc-registration');
     }
 
+    protected function extra_tablenav($which)
+    {
+        if ($which !== 'top') {
+            return;
+        }
+
+        $s = isset($_REQUEST['s']) ? sanitize_text_field(wp_unslash((string) $_REQUEST['s'])) : '';
+        $export_url = wp_nonce_url(
+            add_query_arg(
+                array_filter(
+                    [
+                        'page' => HCR_ADMIN_PAGE_SLUG,
+                        'hcr_export' => 'csv',
+                        's' => $s !== '' ? $s : null,
+                    ]
+                ),
+                admin_url('admin.php')
+            ),
+            'hcr_export_csv'
+        );
+        ?>
+        <div class="alignleft actions hcr-submissions-toolbar">
+            <label class="screen-reader-text" for="hcr-submissions-search"><?php esc_html_e('Search submissions', 'pampers-hc-registration'); ?></label>
+            <input type="search" id="hcr-submissions-search" class="regular-text" name="s" value="<?php echo esc_attr($s); ?>" placeholder="<?php esc_attr_e('Search…', 'pampers-hc-registration'); ?>">
+            <?php submit_button(__('Search', 'pampers-hc-registration'), 'secondary', 'hcr-submissions-search-submit', false); ?>
+            <a href="<?php echo esc_url($export_url); ?>" class="button"><?php esc_html_e('Export CSV', 'pampers-hc-registration'); ?></a>
+        </div>
+        <?php
+    }
+
     public function prepare_items()
     {
         $columns = $this->get_columns();
@@ -95,12 +125,38 @@ class HCR_Submissions_List_Table extends WP_List_Table
             $order = 'DESC';
         }
 
-        $total_items = (int) $wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+        $search = isset($_REQUEST['s']) ? sanitize_text_field(wp_unslash((string) $_REQUEST['s'])) : '';
+        $search_cond = function_exists('hcr_submissions_search_where_clause')
+            ? hcr_submissions_search_where_clause($wpdb, $search)
+            : ['sql' => '', 'args' => []];
+
+        if ($search_cond['sql'] !== '') {
+            $total_items = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM `{$table}` WHERE " . $search_cond['sql'],
+                    ...$search_cond['args']
+                )
+            );
+        } else {
+            $total_items = (int) $wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+        }
 
         $per_page = absint($per_page);
         $offset = absint($offset);
-        $sql = "SELECT * FROM `{$table}` ORDER BY `{$orderby}` {$order}, `id` DESC LIMIT {$per_page} OFFSET {$offset}";
-        $this->items = $wpdb->get_results($sql);
+
+        $select_sql = "SELECT * FROM `{$table}`";
+        if ($search_cond['sql'] !== '') {
+            $select_sql .= ' WHERE ' . $search_cond['sql'];
+        }
+        $select_sql .= " ORDER BY `{$orderby}` {$order}, `id` DESC LIMIT %d OFFSET %d";
+
+        if ($search_cond['args'] === []) {
+            $this->items = $wpdb->get_results($wpdb->prepare($select_sql, $per_page, $offset));
+        } else {
+            $this->items = $wpdb->get_results(
+                $wpdb->prepare($select_sql, ...array_merge($search_cond['args'], [$per_page, $offset]))
+            );
+        }
 
         if (is_array($this->items)) {
             foreach ($this->items as $i => $row) {
