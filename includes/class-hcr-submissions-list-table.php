@@ -28,12 +28,12 @@ class HCR_Submissions_List_Table extends WP_List_Table
     {
         return [
             'hcr_no' => __('No.', 'pampers-hc-registration'),
+            'healthcare_id' => __('Healthcare ID', 'pampers-hc-registration'),
             'organization_name' => __('Organization', 'pampers-hc-registration'),
             'created_at' => __('Submitted', 'pampers-hc-registration'),
             'contact' => __('Contact', 'pampers-hc-registration'),
             'email' => __('Email', 'pampers-hc-registration'),
             'city' => __('City', 'pampers-hc-registration'),
-            'province' => __('Province', 'pampers-hc-registration'),
             'category' => __('Category', 'pampers-hc-registration'),
             'patients_type' => __('Patients', 'pampers-hc-registration'),
             'number_of_packages' => __('Packages', 'pampers-hc-registration'),
@@ -46,6 +46,7 @@ class HCR_Submissions_List_Table extends WP_List_Table
         return [
             'created_at' => ['created_at', true],
             'organization_name' => ['organization_name', false],
+            'healthcare_id' => ['healthcare_id', false],
             'email' => ['email', false],
             'city' => ['city', false],
         ];
@@ -115,7 +116,7 @@ class HCR_Submissions_List_Table extends WP_List_Table
         $offset = ($current_page - 1) * $per_page;
 
         $orderby = isset($_REQUEST['orderby']) ? sanitize_key(wp_unslash($_REQUEST['orderby'])) : 'created_at';
-        $allowed = ['created_at', 'organization_name', 'email', 'city', 'province', 'category'];
+        $allowed = ['created_at', 'organization_name', 'healthcare_id', 'email', 'city', 'category'];
         if (!in_array($orderby, $allowed, true)) {
             $orderby = 'created_at';
         }

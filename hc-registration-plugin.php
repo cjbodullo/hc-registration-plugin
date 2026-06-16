@@ -46,6 +46,7 @@ function hcr_submissions_search_where_clause($wpdb, $search)
 
     $like = '%' . $wpdb->esc_like($search) . '%';
     $fields = [
+        'healthcare_id',
         'organization_name',
         'contact_first_name',
         'contact_last_name',
@@ -83,6 +84,7 @@ function hcr_submissions_csv_columns()
 {
     return [
         'no',
+        'healthcare_id',
         'organization_name',
         'contact_first_name',
         'contact_last_name',
@@ -212,6 +214,7 @@ function hcr_maybe_install_table()
 
     $sql = "CREATE TABLE {$table} (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        healthcare_id VARCHAR(64) NULL DEFAULT NULL,
         organization_name VARCHAR(255) NULL DEFAULT NULL,
         contact_first_name VARCHAR(250) NULL DEFAULT NULL,
         contact_last_name VARCHAR(120) NULL DEFAULT NULL,
@@ -299,6 +302,13 @@ function hcr_get_patients_types()
  */
 function hcr_validate_submission_row(array $input, $require_confirm = true)
 {
+    $healthcareId = sanitize_text_field((string) ($input['healthcare_id'] ?? ''));
+    $healthcareId = strtoupper(trim($healthcareId));
+    if ($healthcareId === 'HCP') {
+        // Treat bare prefix as "not set" unless they add digits/characters.
+        $healthcareId = '';
+    }
+
     $organization = sanitize_text_field($input['organization_name'] ?? '');
     $first = sanitize_text_field($input['contact_first_name'] ?? '');
     $last = sanitize_text_field($input['contact_last_name'] ?? '');
@@ -372,6 +382,7 @@ function hcr_validate_submission_row(array $input, $require_confirm = true)
     }
 
     return [
+        'healthcare_id' => $healthcareId === '' ? null : $healthcareId,
         'organization_name' => $organization,
         'contact_first_name' => $first,
         'contact_last_name' => $last,
@@ -1020,6 +1031,7 @@ function hcr_handle_submission()
     global $wpdb;
 
     $input = [
+        'healthcare_id' => '',
         'organization_name' => wp_unslash($_POST['name'] ?? ''),
         'contact_first_name' => wp_unslash($_POST['firstName'] ?? ''),
         'contact_last_name' => wp_unslash($_POST['lastName'] ?? ''),
@@ -1055,6 +1067,7 @@ function hcr_handle_submission()
         $table,
         $validated,
         [
+            '%s', // healthcare_id
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
             '%s', '%s', '%s', '%d', '%d', '%s', '%s',
         ]
@@ -1114,6 +1127,19 @@ function hcr_register_admin_menu()
 }
 
 add_action('admin_menu', 'hcr_register_admin_menu');
+
+add_action('admin_head', static function () {
+    if (empty($_GET['page']) || sanitize_key(wp_unslash((string) $_GET['page'])) !== HCR_ADMIN_PAGE_SLUG) {
+        return;
+    }
+    ?>
+    <style>
+        /* Keep the "No." column compact on submissions list table. */
+        .wp-list-table .column-hcr_no { width: 30px; }
+        .wp-list-table .column-hcr_no strong { display: inline-block; min-width: 0; }
+    </style>
+    <?php
+});
 
 function hcr_maybe_export_submissions_csv()
 {
@@ -1296,6 +1322,7 @@ function hcr_render_submission_detail($id)
     $confirm_js = wp_json_encode(__('Delete this submission? This cannot be undone.', 'pampers-hc-registration'));
 
     $fields = [
+        'healthcare_id' => __('Healthcare ID', 'pampers-hc-registration'),
         'organization_name' => __('Organization', 'pampers-hc-registration'),
         'contact_first_name' => __('Contact first name', 'pampers-hc-registration'),
         'contact_last_name' => __('Contact last name', 'pampers-hc-registration'),
@@ -1423,6 +1450,13 @@ function hcr_render_submission_edit($id)
             <input type="hidden" name="hcr_display_no" value="<?php echo $hcr_no > 0 ? (int) $hcr_no : ''; ?>">
 
             <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><label for="hcr-adm-hc-id"><?php esc_html_e('Healthcare ID', 'pampers-hc-registration'); ?></label></th>
+                    <td>
+                        <?php $hcIdVal = $v('healthcare_id'); ?>
+                        <input name="healthcare_id" id="hcr-adm-hc-id" type="text" class="regular-text" value="<?php echo esc_attr($hcIdVal !== '' ? $hcIdVal : 'HCP'); ?>">
+                    </td>
+                </tr>
                 <tr>
                     <th scope="row"><label for="hcr-adm-org"><?php esc_html_e('Organization', 'pampers-hc-registration'); ?></label></th>
                     <td><input name="organization_name" id="hcr-adm-org" type="text" class="regular-text" value="<?php echo esc_attr($v('organization_name')); ?>" required></td>
@@ -1587,6 +1621,7 @@ function hcr_handle_admin_save_submission()
     }
 
     $input = [
+        'healthcare_id' => wp_unslash($_POST['healthcare_id'] ?? ''),
         'organization_name' => wp_unslash($_POST['organization_name'] ?? ''),
         'contact_first_name' => wp_unslash($_POST['contact_first_name'] ?? ''),
         'contact_last_name' => wp_unslash($_POST['contact_last_name'] ?? ''),
@@ -1635,6 +1670,7 @@ function hcr_handle_admin_save_submission()
         $validated,
         ['id' => $id],
         [
+            '%s', // healthcare_id
             '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
             '%s', '%s', '%s', '%d', '%d', '%s',
         ],
